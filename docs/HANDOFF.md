@@ -1,18 +1,18 @@
 # Handoff — 2026-11-18
 
-Resumed after an owner-requested pause. The two review findings below are fixed and
-locally reverified; live Supabase acceptance is still pending. Persisted goal is active.
+MVP integrated into `develop` via PR #5 (merge `0b5930c`); `main` is unchanged.
+The two review findings are fixed and locally/CI reverified. Live Supabase
+acceptance is still pending owner-run migrations and private runtime configuration.
 Do not deploy or promote to `main` without separate owner approval.
 
 ## Repository
 
-- Work branch: `feat/application-foundation`; PR #5 targets `develop`.
-- `main` unchanged; no deployment or production promotion.
+- Integration branch `develop` now contains the full MVP; `main` remains at `6aeb66a`.
 - Original Spring Boot project untouched.
-- Core backend committed as `357d52d`: clean package passed **43 tests**, zero skips,
-  using the real restricted `kanban_runtime` role against isolated PostgreSQL.
-- Frontend fix checkpoint adds synchronous auth-scope guarding and the saved-mutation
-  regression.
+- Clean backend package passed **43 tests**, zero skips, using the real restricted
+  `kanban_runtime` role against isolated PostgreSQL.
+- Remote required checks passed on the merged head: Branch flow, isolated schema,
+  and Build/verify foundation (including browser CRUD against real Java + PostgreSQL).
 
 ## Verified evidence
 
@@ -53,17 +53,19 @@ No implementation agent is currently running.
 - No confirmation of executed live migrations or private runtime credentials yet.
 - Do not request passwords/tokens/service-role keys in chat or commit real env files.
 
-## Resume order (current position: step 5 complete locally)
+## Resume order (current position: step 7 done; live acceptance remains)
 
 1. Inspect Git status/lastcommit and agent reports; do not assume narrated results. DONE
 2. Review frontend synchronous auth scope + committed-save refresh regression fixes. DONE
 3. Run frontend unit/build/audit/browser suite and realCRUD browser mode again. DONE (48/12/2, audit0)
 4. Recheck test container/server cleanup, stage secret/whitespace scan, push checkpoint. DONE
-5. Check full PR CI. IN PROGRESS for the latest fix commit.
-6. Owner confirms migrations/settings; privately configure restricted runtime connection
-   and frontend public values on own computer. Verify actual Supabase login/two-user
-   privacy/TLS/recovery; these are NOT yet accepted.
-7. Merge only through develop after validation; main requires separate approval.
+5. Check full PR CI. DONE (Branch flow, schema, build/verify all passed)
+6. Merge only through develop after validation; main requires separate approval. DONE (`0b5930c`)
+7. **Owner action:** confirm the confirmation-off setting, run reviewed `001`/`002`,
+   configure the restricted runtime connection and frontend public values privately,
+   then verify live sign-in, two-user privacy, TLS connection, persistence, and recovery.
+8. Re-run the acceptance checklist in LOCAL-DEMO.md, then request separate approval for
+   any `develop` → `main` promotion. No deployment automation exists.
 
 Commands on implementation host (from repo root):
 

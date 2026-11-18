@@ -55,7 +55,13 @@ keyboard-usable controls, and no decorative animation or branding exercise.
   desktop/mobile browser CRUD runs** against Java + restricted-role PostgreSQL
   (synthetic Auth). Backend remains **43 tests**, zero skips. No temporary listeners
   or containers remained.
-- See HANDOFF.md for live acceptance steps. No implementation agents/jobs remain running.
+- Merged into `develop` through PR #5 (merge `0b5930c`); `main` remains untouched.
+  Required remote checks passed: branch flow, isolated schema, and build/verify
+  (backend 43 tests, frontend 48 unit tests, 12 browser tests, 2 real CRUD runs).
+- **Remaining release gates:** owner saves confirmation-off, runs reviewed migrations,
+  configures restricted runtime credentials privately, and verifies live Supabase
+  sign-in, two-user privacy, TLS connectivity, persistence, and email recovery.
+  See HANDOFF.md and LOCAL-DEMO.md. No deployment or `main` promotion has occurred.
 
 These are local fixture-based results, not a completed live Supabase demo.
 A health success checks Java liveness only, never database/auth readiness.
