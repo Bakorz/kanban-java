@@ -78,6 +78,20 @@ Direct connections require supported networking; session pooler is an option for
 IPv4-only networks. Copy the actual endpoint and custom-role pooler username;
 do not guess it. Keep migration credentials out of the runtime configuration.
 
+The backend deliberately accepts only this shape (no extra parameters):
+
+```text
+JDBC_URL=jdbc:postgresql://HOST:PORT/postgres?sslmode=verify-full
+```
+
+Remove `pgbouncer=true`, `connection_limit`, or other options from a copied pooler
+string. For a custom role through the shared session pooler, the username is
+normally `kanban_runtime.<project-ref>`; confirm it in the dashboard rather than
+inferring it. `DB_SSL_ROOT_CERT` is optional: set it to an absolute CA file if the
+chosen endpoint is not trusted by the JVM's default trust store. Do not disable TLS.
+If `DB_SSL_ROOT_CERT` is present, the file must be readable by the launcher and
+must not be committed.
+
 Public backend identity settings use the project Auth issuer and its public JWKS
 URL. The expected audience is `authenticated`. Real JWTs are obtained through SDK
 sign-in, never pasted manually into code or chat.
