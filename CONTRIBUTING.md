@@ -1,17 +1,29 @@
 # Contribution and Git Workflow
 
-## Branches
+## Branches and promotion
 
-- `main`: reviewed, coherent project baseline.
-- `feat/<topic>`: a new feature.
-- `fix/<topic>`: a bug fix.
-- `docs/<topic>`: documentation changes.
+```text
+feat/*, fix/*, docs/*, chore/*
+              │ pull request
+              ▼
+           develop  ── development/staging deployment
+              │ release pull request
+              ▼
+            main    ── production release/deployment
+```
 
-Once `main` exists on GitHub:
+- `main`: production-ready releases only. A pull request into `main` must come from this repository's `develop` branch.
+- `develop`: integration branch and source for development/staging deployments; also the default GitHub branch.
+- `feat/<topic>`, `fix/<topic>`, `docs/<topic>`, `chore/<topic>`: short-lived work branches created from `develop`, with pull requests targeting `develop` only.
+- No direct pushes, force pushes, or branch deletion on `main` or `develop`.
+- No direct feature-to-main promotion, including fixes. Fixes follow `fix/* → develop → main`.
+- Use merge commits for promotion so the common branch history is preserved. Do not squash or rebase a `develop → main` release.
+
+### Feature workflow
 
 ```bash
-git switch main
-git pull --ff-only origin main
+git switch develop
+git pull --ff-only origin develop
 git switch -c feat/board-crud
 
 # Make and test the focused change.
@@ -22,9 +34,22 @@ git add path/to/reviewed-file
 git diff --cached
 git commit -m "feat: implement board CRUD"
 git push -u origin feat/board-crud
+gh pr create --base develop --head feat/board-crud
 ```
 
-Open a pull request into `main`. Describe the change, linked backlog tasks, tests, and any migrations. Prefer small commits with clear messages. Do not force-push shared history without explicit coordination.
+Describe the change, backlog tasks, tests, and migrations. Wait for required checks, review the diff, and merge into `develop`. A second-person approval is not mandatory for this solo project; add required approvals when a team exists.
+
+### Release workflow
+
+After features are integrated and verified on the development/staging environment:
+
+```bash
+gh pr create --base main --head develop --title "release: describe the release"
+# Review and pass checks, then merge with a merge commit.
+# Do not delete develop after the release.
+```
+
+Only promote releases when authorized; do not automatically merge unrelated future features to production. Rollback changes use the same fix-branch flow. Deployment pipelines are not implemented yet: these branch roles define future deployment sources, not a claim that hosting or environments are already configured.
 
 ## Before committing
 
@@ -52,7 +77,11 @@ Do not invent another person's identity. GitHub provides an exact private commit
 
 ## Repository settings
 
-When available for the repository's plan and visibility, enable protections/rulesets for `main` and require the appropriate checks. These settings are not automatically enabled by cloning or by this document. CI and secret-scanning automation will be added explicitly during implementation.
+Protect both `develop` and `main` with required pull requests and the `Branch flow / validate` check, including administrators. Disable force pushes and branch deletion. Use zero required approvals while the project has one contributor; required pull requests and checks still apply. Keep the named check required even for documentation changes.
+
+The branch-flow workflow validates pull-request source/base branches using only GitHub event metadata. It does not check out or execute pull-request code and uses read-only repository permissions. It checks that same-repository `develop` is the sole source into `main`, and that short-lived prefixed work branches target `develop`.
+
+The workflow uses `pull_request_target` so its policy comes from the trusted base branch. Branch protection and repository settings must be verified on GitHub, not assumed from documentation. Build/test checks will be added when application code exists. Secret-scanning automation is separate and is not claimed as enabled here.
 
 ## Database changes
 

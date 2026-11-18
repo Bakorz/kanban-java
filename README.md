@@ -61,6 +61,14 @@ Implementation will add `frontend/`, `backend/`, and `database/migrations/` as d
 
 Remote: <https://github.com/Bakorz/kanban-java>
 
-Use `main` for reviewed changes and short-lived branches such as `feat/auth-flow`, `fix/card-ordering`, or `docs/setup`. Start each feature from an up-to-date `main` and merge through a GitHub pull request.
+Branch flow: **`feat/*` (or `fix/*`, `docs/*`, `chore/*`) → `develop` → `main`**.
+
+- `develop` is the default integration branch and the source for development/staging deployments.
+- `main` contains production-ready releases; only `develop` may be merged into it through a release pull request.
+- Create work branches from an up-to-date `develop` and target `develop` in feature pull requests.
+- Both long-lived branches require pull requests and the branch-flow check; direct/force pushes are blocked, including for administrators.
+- Use merge commits for releases and preserve `develop` after promotion.
+
+See the [contribution guide](<CONTRIBUTING.md>) for commands and policy details. Deployment automation and hosting are not configured yet.
 
 Do not run deployment commands or apply remote database migrations simply because a change has been committed. Those actions require separate environment-specific approval.
