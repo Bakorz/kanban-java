@@ -36,7 +36,7 @@ export function createApi({ client, onAuthFailure = () => {}, getScope = () => 0
       const timer = setTimeout(() => controller.abort(), timeoutMs);
       let response, data;
       try {
-        response = await fetcher(path, { method, credentials: 'omit', redirect: 'error', cache: 'no-store', signal: controller.signal,
+        response = await fetcher(path, { method, credentials: 'same-origin', redirect: 'error', cache: 'no-store', signal: controller.signal,
           headers: { Accept: 'application/json', Authorization: `Bearer ${session.access_token}`, ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) },
           ...(body !== undefined ? { body: JSON.stringify(body) } : {}) });
         if (response.status !== 204) {

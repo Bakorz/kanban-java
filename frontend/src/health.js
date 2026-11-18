@@ -19,7 +19,7 @@ export async function checkHealth({ timeoutMs = 5000, fetcher = fetch } = {}) {
       (async () => {
         const response = await fetcher(`${apiBase()}/health`, {
           signal: controller.signal,
-          credentials: 'omit',
+          credentials: 'same-origin',
           cache: 'no-store',
           headers: { Accept: 'application/json' },
           redirect: 'error',
