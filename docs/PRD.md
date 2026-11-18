@@ -223,6 +223,8 @@ flowchart TB
 
 Development: Vite serves React and proxies `/api` to Tomcat. Production/submission: one HTTPS origin serves the React build and routes `/api` to Tomcat. Client routes may fall back to the React entry page; API routes must never fall back to HTML.
 
+Version-control promotion is work branch → `develop` → `main`. `develop` is the default integration branch and the source for development/staging deployments; `main` is reserved for production-ready releases. Every change, including fixes and documentation, must pass through a pull request into `develop` before release promotion to `main`. Deployment pipelines must use separate environment secrets and approvals; no hosting or deployment automation is configured merely by creating these branches.
+
 Use a compatible Jakarta Servlet/Tomcat/JDK set, pinned and smoke-tested during setup. Do not mix `javax.servlet` and `jakarta.servlet`. The installed latest JDK is not itself a requirement to target that bytecode version.
 
 ## 6. Authentication flow
