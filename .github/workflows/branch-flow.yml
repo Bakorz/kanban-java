@@ -1,0 +1,41 @@
+name: Branch flow
+
+# Use trusted base-branch policy; never check out or run pull-request code here.
+on:
+  pull_request_target:
+    branches: [develop, main]
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Branch flow / validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Validate promotion source and target
+        env:
+          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$BASE_BRANCH" == "main" ]]; then
+            if [[ "$HEAD_BRANCH" != "develop" || "$HEAD_REPOSITORY" != "$BASE_REPOSITORY" ]]; then
+              echo "::error::Only this repository's develop branch may be promoted to main. Merge work into develop first."
+              exit 1
+            fi
+          elif [[ "$BASE_BRANCH" == "develop" ]]; then
+            if [[ ! "$HEAD_BRANCH" =~ ^(feat|fix|docs|chore)/[A-Za-z0-9][A-Za-z0-9._/-]*$ ]]; then
+              echo "::error::Use a feat/*, fix/*, docs/*, or chore/* work branch targeting develop."
+              exit 1
+            fi
+          else
+            echo "::error::Unsupported target branch."
+            exit 1
+          fi
+          echo "Branch promotion policy passed."

@@ -10,6 +10,8 @@ All implementation tasks below are **not started**. Planning documents exist; th
 
 Complete phases in dependency order. UI work can run against fixtures while backend work proceeds, but fixture-only behavior never counts as an integrated feature.
 
+All tasks use work branches created from `develop`, with pull requests targeting `develop`. `develop` is the integration and development/staging deployment branch. Only a release pull request from `develop` may enter production branch `main`. Deployment automation and application CI remain separate implementation tasks; the branch-flow policy check is repository infrastructure.
+
 Roles: **Owner** = project owner/user; **Agent** = implementation work; **Joint** = owner supplies approvals/configuration while the agent implements or verifies.
 
 Size indicates relative effort, not a promised duration: **S** = focused change, **M** = several related changes, **L** = multi-layer work requiring substantial tests. A calendar estimate should follow the deadline/team-size decision and the first working vertical slice.
