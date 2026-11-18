@@ -63,7 +63,8 @@ describe('auth lifecycle and routes', () => {
     const fixture = mockAuth(); let resolve;
     fixture.client.auth.getSession.mockImplementation(() => new Promise((r) => { resolve = r; }));
     const view = route('/dashboard', fixture.client);
-    expect(screen.getByRole('progressbar')).toHaveAccessibleName('Loading authentication');
+    const progress = screen.getByRole('progressbar', { name: 'Checking your session…' });
+    expect(progress).not.toHaveAttribute('value');
     expect(screen.queryByRole('heading', { name: 'Log in to Kanban' })).not.toBeInTheDocument();
     await act(async () => resolve({ data: { session: null }, error: null }));
     expect(await screen.findByRole('heading', { name: 'Log in to Kanban', level: 1 })).toBeInTheDocument();
@@ -129,7 +130,7 @@ describe('auth lifecycle and routes', () => {
 });
 
 describe('board and card operations', () => {
-  it('searches board cards and opens the create form over the dashboard', async () => {
+  it('filters board cards as you type and opens the create form over the dashboard', async () => {
     const { client } = mockAuth(testSession);
     vi.stubGlobal('fetch', vi.fn(async (path) => {
       if (path === '/api/boards') return reply({ boards: [
@@ -149,11 +150,16 @@ describe('board and card operations', () => {
     expect(await screen.findByText('1 task')).toBeInTheDocument();
     expect(roadmapLink).toHaveAccessibleDescription('1 task: 1 to do.');
 
-    fireEvent.change(screen.getByRole('searchbox', { name: 'Search boards' }), { target: { value: 'hir' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
-    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Roadmap' })).not.toBeInTheDocument());
+    const searchbox = screen.getByRole('searchbox', { name: 'Search boards' });
+    expect(screen.queryByRole('button', { name: 'Search', exact: true })).not.toBeInTheDocument();
+    fireEvent.change(searchbox, { target: { value: ' OFFERS ' } });
+    expect(screen.queryByRole('heading', { name: 'Roadmap' })).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Hiring' })).toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent('1 board found.');
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('1 board found.'));
+    fireEvent.change(searchbox, { target: { value: 'unknown' } });
+    expect(screen.getByRole('heading', { name: 'No boards match' })).toBeInTheDocument();
+    fireEvent.change(searchbox, { target: { value: '' } });
+    expect(screen.getByRole('link', { name: 'Roadmap' })).toBeInTheDocument();
 
     const newBoard = screen.getByRole('button', { name: 'New board' });
     fireEvent.click(newBoard);
@@ -201,7 +207,7 @@ describe('board and card operations', () => {
     await act(async () => resolve(reply({ error: { code: 'VALIDATION_ERROR', message: 'Check the highlighted fields.', fieldErrors: { title: 'A different title is required.' } } }, 400)));
     expect(await screen.findByRole('alert')).toHaveTextContent('Check the highlighted fields.');
     expect(title).toHaveAttribute('aria-invalid', 'true'); expect(title).toHaveAccessibleDescription('A different title is required.'); expect(title).toHaveValue('Task');
-    expect(screen.getByRole('button', { name: 'Create card' })).toBeEnabled(); expect(screen.getByRole('status')).toHaveTextContent('');
+    expect(screen.getByRole('button', { name: 'Create card' })).toBeEnabled(); expect(screen.getByRole('status', { name: 'Board activity' })).toHaveTextContent('');
   });
   it('closes a committed create form when the following reload fails and only retries GET', async () => {
     const { client } = mockAuth(testSession); let reads = 0;
@@ -215,7 +221,7 @@ describe('board and card operations', () => {
     fireEvent.change(screen.getByLabelText('Title (required)'), { target: { value: 'Committed task' } }); fireEvent.submit(screen.getByRole('form', { name: 'Add card to To Do' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Reload unavailable');
     expect(screen.queryByRole('button', { name: 'Create card' })).not.toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent('change was saved');
+    expect(screen.getByRole('status', { name: 'Board activity' })).toHaveTextContent('change was saved');
     fireEvent.click(screen.getByRole('button', { name: 'Try again' })); await screen.findByRole('heading', { name: 'Work', level: 1 });
     expect(fetcher.mock.calls.filter(([, options]) => options.method === 'POST')).toHaveLength(1);
   });

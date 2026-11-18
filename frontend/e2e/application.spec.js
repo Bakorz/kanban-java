@@ -66,6 +66,161 @@ test('auth actions are aligned and the password eye works without submitting', a
   await expect(page).toHaveURL(/\/login$/);
 });
 
+test('dashboard aligns its actions and replaces the loading skeleton with live results', async ({ page }, testInfo) => {
+  test.skip(realApi, 'Requires control of the board list and SDK responses.');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await authRoutes(page);
+  let releaseBoards;
+  const boardList = new Promise((resolve) => { releaseBoards = resolve; });
+  await page.route('**/api/boards', async (route) => {
+    await boardList;
+    await route.fulfill({ json: { boards: [
+      { id: 'roadmap', name: 'Product roadmap' },
+      { id: 'release', name: 'Release checklist' },
+    ] } });
+  });
+  await page.route('**/api/boards/*', (route) => route.fulfill({ json: { columns: [
+    { id: 'todo', name: 'To Do', cards: [{ id: 'c1', title: 'Plan the next release' }] },
+  ] } }));
+
+  await login(page);
+  const heading = page.getByRole('heading', { name: 'My boards', exact: true });
+  const create = page.getByRole('button', { name: 'New board' });
+  const logout = page.getByRole('button', { name: 'Log out', exact: true });
+  const progress = page.getByRole('progressbar', { name: 'Loading your boards…' });
+  await expect(progress).toBeVisible();
+  expect(await progress.getAttribute('value')).toBeNull();
+  await expect(logout.locator('svg')).toHaveAttribute('aria-hidden', 'true');
+  const [titleBox, createBox] = await Promise.all([heading.boundingBox(), create.boundingBox()]);
+  expect(Math.abs(titleBox.y + titleBox.height / 2 - (createBox.y + createBox.height / 2))).toBeLessThan(2);
+  expect(createBox.x).toBeGreaterThan(titleBox.x + titleBox.width);
+  expect(createBox.height).toBeGreaterThanOrEqual(44);
+  expect(await page.locator('body').evaluate((body) => body.scrollWidth - body.clientWidth)).toBe(0);
+
+  releaseBoards();
+  await expect(progress).toHaveCount(0);
+  await expect(page.locator('.dash-results')).toHaveCSS('animation-name', 'none');
+  const roadmap = page.getByRole('link', { name: 'Product roadmap', exact: true });
+  const release = page.getByRole('link', { name: 'Release checklist', exact: true });
+  await expect(roadmap).toBeVisible();
+  await expect(release).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Search', exact: true })).toHaveCount(0);
+  const search = page.getByRole('searchbox', { name: 'Search boards' });
+  await search.fill('release');
+  await expect(roadmap).toHaveCount(0);
+  await expect(release).toBeVisible();
+  await expect(page.getByRole('status')).toHaveText('1 board found.');
+  await search.fill('');
+  await expect(roadmap).toBeVisible();
+
+  if (testInfo.project.name === 'mobile') {
+    await create.tap();
+  } else {
+    await create.press('Enter');
+  }
+  await expect(page.getByRole('dialog', { name: 'Create board' })).toBeVisible();
+  await expect(page.getByLabel('Board name (required)')).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(create).toBeFocused();
+});
+
+test('board lanes size to their cards and drops persist the exact position', async ({ page }, testInfo) => {
+  test.skip(realApi, 'Requires synthetic boards and controlled move responses.');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await authRoutes(page);
+  const board = { id: 'work', name: 'Release planning' };
+  const columns = [
+    { id: 'todo', name: 'To Do', cards: [{ id: 'first', title: 'First task' }, { id: 'second', title: 'Second task' }, { id: 'third', title: 'Third task' }] },
+    { id: 'progress', name: 'In Progress', cards: [{ id: 'review', title: 'Review notes' }] },
+    { id: 'done', name: 'Done', cards: [] },
+  ];
+  const moves = [];
+  let rejectNext = false;
+  await page.route('**/api/boards', (route) => route.fulfill({ json: { boards: [board] } }));
+  await page.route('**/api/boards/work', (route) => route.fulfill({ json: { board, columns } }));
+  await page.route('**/api/cards/*/move', (route) => {
+    const id = new URL(route.request().url()).pathname.split('/')[3];
+    const { targetColumnId, newPosition } = route.request().postDataJSON();
+    moves.push({ id, targetColumnId, newPosition });
+    if (rejectNext) return route.fulfill({ status: 409, json: { error: { message: 'Try again.' } } });
+    const source = columns.find((column) => column.cards.some((card) => card.id === id));
+    const [card] = source.cards.splice(source.cards.findIndex((candidate) => candidate.id === id), 1);
+    columns.find((column) => column.id === targetColumnId).cards.splice(newPosition, 0, card);
+    return route.fulfill({ json: { board, columns } });
+  });
+  await login(page);
+  await page.getByRole('link', { name: board.name, exact: true }).click();
+  const lane = (name) => page.getByRole('region', { name, exact: true });
+  const toDo = lane('To Do');
+  const done = lane('Done');
+  const first = page.getByRole('button', { name: 'Move card First task' });
+  await expect(first).toBeVisible();
+  expect((await toDo.boundingBox()).height).toBeGreaterThan((await done.boundingBox()).height + 50);
+  if (testInfo.project.name === 'desktop') expect((await toDo.boundingBox()).y).toBe((await done.boundingBox()).y);
+  const status = page.getByRole('status', { name: 'Board activity' });
+
+  await first.press('Enter');
+  await expect(page.getByLabel('Move to column')).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(first).toBeFocused();
+
+  const touch = testInfo.project.name === 'mobile' ? await page.context().newCDPSession(page) : null;
+  const pointer = async (type, x, y) => {
+    if (touch) await touch.send('Input.dispatchTouchEvent', { type: `touch${type}`, touchPoints: type === 'End' ? [] : [{ x, y }] });
+    else if (type === 'Start') { await page.mouse.move(x, y); await page.mouse.down(); }
+    else if (type === 'End') await page.mouse.up();
+    else await page.mouse.move(x, y, { steps: 5 });
+  };
+  async function startDrag(handle, x, y) {
+    await handle.scrollIntoViewIfNeeded();
+    const box = await handle.boundingBox();
+    await pointer('Start', box.x + box.width / 2, box.y + box.height / 2);
+    await pointer('Move', box.x + box.width / 2 - 12, box.y + box.height / 2);
+    await expect(page.locator('.board-columns')).toHaveAttribute('data-drag-active', 'true');
+    await pointer('Move', x, y);
+  }
+
+  if (touch) await done.getByText('No cards yet').scrollIntoViewIfNeeded();
+  const [emptyBox, originalBox] = await Promise.all([done.getByText('No cards yet').boundingBox(), first.boundingBox()]);
+  expect(originalBox.y).toBeGreaterThanOrEqual(0);
+  expect(emptyBox.y + emptyBox.height / 2).toBeLessThan(await page.evaluate(() => window.innerHeight));
+  await startDrag(first, emptyBox.x + emptyBox.width / 2, emptyBox.y + emptyBox.height / 2);
+  await expect(done.getByText('Drop card here')).toBeVisible();
+  await pointer('End');
+  await expect(status).toHaveText('Moved “First task” to Done, position 1.');
+  await expect(done.getByRole('heading', { name: 'First task' })).toBeVisible();
+  expect(moves).toEqual([{ id: 'first', targetColumnId: 'done', newPosition: 0 }]);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+
+  if (!touch) {
+    const currentFirst = page.getByRole('button', { name: 'Move card First task' });
+    await startDrag(currentFirst, originalBox.x - 40, originalBox.y - 10);
+    await expect(toDo.locator('[data-drop="before"]').first()).toBeVisible();
+    await page.keyboard.press('Escape');
+    await pointer('End');
+    await expect(done.getByRole('heading', { name: 'First task' })).toBeVisible();
+    expect(moves).toHaveLength(1);
+
+    const third = page.getByRole('button', { name: 'Move card Third task' });
+    const secondBox = await toDo.getByRole('listitem').first().boundingBox();
+    await startDrag(third, secondBox.x + 20, secondBox.y + 4);
+    await pointer('End');
+    await expect(status).toHaveText('Moved “Third task” to To Do, position 1.');
+    await expect(toDo.getByRole('heading', { level: 3 })).toHaveText(['Third task', 'Second task']);
+    expect(moves[1]).toEqual({ id: 'third', targetColumnId: 'todo', newPosition: 0 });
+
+    rejectNext = true;
+    const target = await lane('In Progress').getByRole('listitem').boundingBox();
+    await startDrag(third, target.x + 20, target.y + target.height - 4);
+    await pointer('End');
+    await expect(page.getByRole('alert')).toHaveText('Couldn’t move the card. Try again.');
+    await expect(toDo.getByRole('heading', { level: 3 })).toHaveText(['Third task', 'Second task']);
+  }
+
+  await page.reload();
+  await expect(done.getByRole('heading', { name: 'First task' })).toBeVisible();
+});
+
 test('SDK login board/card CRUD keyboard moves null clearing and logout', async ({ page }, testInfo) => {
   test.skip(realApi, 'Explicit SDK/API mock integration fixture only.');
   await authRoutes(page);
@@ -108,17 +263,17 @@ test('SDK login board/card CRUD keyboard moves null clearing and logout', async 
   await page.getByRole('button', { name: 'Move Review the result up' }).focus();
   await expect(page.getByRole('button', { name: 'Move Review the result up' })).toBeFocused();
   await page.keyboard.press('Enter');
-  await expect(page.getByRole('status')).toHaveText('Card moved.');
+  await expect(page.getByRole('status', { name: 'Board activity' })).toHaveText('Card moved.');
   expect(mutations).toContainEqual({ path: '/api/cards/card2/move', method: 'POST', body: { targetColumnId: 'col0', newPosition: 0 } });
   await page.getByRole('button', { name: 'Edit card Write a useful task' }).click();
   await page.getByLabel('Move to column').selectOption('col1');
   await page.getByRole('button', { name: 'Move Write a useful task to selected column' }).focus();
   await page.keyboard.press('Enter');
-  await expect(page.getByRole('status')).toHaveText('Card moved.');
+  await expect(page.getByRole('status', { name: 'Board activity' })).toHaveText('Card moved.');
   await page.getByRole('button', { name: 'Edit card Write a useful task' }).click();
   await page.getByLabel(/Description \(optional/).fill(''); await page.getByLabel('Due date (optional)').fill('');
   await page.getByRole('button', { name: 'Save card' }).click();
-  await expect(page.getByRole('status')).toHaveText('Card updated.');
+  await expect(page.getByRole('status', { name: 'Board activity' })).toHaveText('Card updated.');
   expect(mutations).toContainEqual({ path: '/api/cards/card1', method: 'PUT', body: { title: 'Write a useful task', description: null, priority: 'MEDIUM', dueDate: null } });
   await expect(page.locator('body')).toHaveJSProperty('scrollWidth', await page.locator('body').evaluate((el) => el.clientWidth));
   await page.screenshot({ path: `.tools/screenshots/workspace-${testInfo.project.name}.png`, fullPage: true });
@@ -126,7 +281,7 @@ test('SDK login board/card CRUD keyboard moves null clearing and logout', async 
   await page.getByRole('button', { name: 'Delete card Review the result' }).click();
   await expect(page.getByRole('button', { name: 'Cancel deletion' })).toBeFocused();
   await page.getByRole('button', { name: 'Confirm delete' }).click();
-  await expect(page.getByRole('status')).toHaveText('Card deleted.');
+  await expect(page.getByRole('status', { name: 'Board activity' })).toHaveText('Card deleted.');
   await page.getByRole('button', { name: 'Edit board', exact: true }).click();
   await page.getByLabel('Board name (required)').fill('Renamed board');
   await page.getByRole('button', { name: 'Save board' }).click();

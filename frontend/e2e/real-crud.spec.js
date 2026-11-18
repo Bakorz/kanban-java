@@ -31,7 +31,7 @@ test('real Java and PostgreSQL board/card lifecycle through browser', async ({ p
   await page.getByLabel('Due date (optional)').fill('2027-03-04');
   await page.getByLabel('Priority', { exact: true }).selectOption('HIGH');
   await page.getByRole('button', { name: 'Create card', exact: true }).click();
-  await expect(page.getByRole('status')).toHaveText('Card created.');
+  await expect(page.getByRole('status', { name: 'Board activity' })).toHaveText('Card created.');
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Persisted task', exact: true })).toBeVisible();
   await expect(page.getByText('Saved by Java to PostgreSQL', { exact: true })).toBeVisible();
@@ -39,7 +39,7 @@ test('real Java and PostgreSQL board/card lifecycle through browser', async ({ p
   await page.getByLabel(/Description \(optional/).fill('');
   await page.getByLabel('Due date (optional)').fill('');
   await page.getByRole('button', { name: 'Save card' }).click();
-  await expect(page.getByRole('status')).toHaveText('Card updated.');
+  await expect(page.getByRole('status', { name: 'Board activity' })).toHaveText('Card updated.');
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Persisted task', exact: true })).toBeVisible();
   await expect(page.getByText('Saved by Java to PostgreSQL', { exact: true })).toHaveCount(0);
@@ -48,7 +48,7 @@ test('real Java and PostgreSQL board/card lifecycle through browser', async ({ p
   await page.getByLabel('Move to column').selectOption({ label: 'In Progress' });
   await page.getByRole('button', { name: 'Move Persisted task to selected column' }).focus();
   await page.keyboard.press('Enter');
-  await expect(page.getByRole('status')).toHaveText('Card moved.');
+  await expect(page.getByRole('status', { name: 'Board activity' })).toHaveText('Card moved.');
   await page.reload();
   const inProgress = page.locator('.column').filter({ has: page.getByRole('heading', { name: /^In Progress/ }) });
   await expect(inProgress.getByRole('heading', { name: 'Persisted task', exact: true })).toBeVisible();
@@ -57,7 +57,7 @@ test('real Java and PostgreSQL board/card lifecycle through browser', async ({ p
   await page.getByRole('button', { name: 'Edit card Persisted task' }).click();
   await page.getByRole('button', { name: 'Delete card Persisted task' }).click();
   await page.getByRole('button', { name: 'Confirm delete' }).click();
-  await expect(page.getByRole('status')).toHaveText('Card deleted.');
+  await expect(page.getByRole('status', { name: 'Board activity' })).toHaveText('Card deleted.');
   await page.getByRole('button', { name: 'Edit board', exact: true }).click();
   await page.getByLabel('Board name (required)').fill(`${name} renamed`);
   await page.getByRole('button', { name: 'Save board' }).click();
