@@ -1,0 +1,4 @@
+# Workspace-local Maven cache used when home is sandboxed.
+.m2/
+# Maven output is also excluded at repository root.
+target/

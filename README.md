@@ -4,7 +4,7 @@ A personal Kanban application planned for a university Java web project.
 
 **Stack:** React + Java Servlets + JDBC + Supabase PostgreSQL + Supabase Auth.
 
-**Status:** Planning and repository initialization only. Application implementation, database provisioning, and deployment have not started.
+**Status:** Foundation implemented: React routes, Servlet health endpoint, build/test commands, and credential-free CI. Authentication, JDBC integration, and real board/card features are not implemented yet. No Supabase migrations or deployment have been performed. See [progress and approved scope](<docs/PROGRESS.md>).
 
 ## Documentation
 
@@ -34,20 +34,56 @@ All board and card operations go through Java. Supabase Auth handles accounts an
 
 ## Repository layout
 
-Current:
-
 ```text
 kanban-java/
-├── docs/
-│   ├── PRD.md
-│   ├── TASKS.md
-│   └── SETUP.md
-├── .gitignore
-├── CONTRIBUTING.md
-└── README.md
+├── frontend/             React + Vite, component and browser tests
+├── backend/              Maven WAR, Jakarta Servlets, embedded Tomcat tests
+├── database/             Reviewed SQL and isolated database-test tooling
+├── scripts/              Temporary real frontend-to-Java verification
+├── docs/                 Requirements, setup, tasks, and progress
+└── .github/workflows/    Branch policy and application CI
 ```
 
-Implementation will add `frontend/`, `backend/`, and `database/migrations/` as described in the PRD. No runnable application or build commands are claimed yet.
+## Build and run the foundation
+
+Prerequisites: Node **24.22.3**, npm **11**, JDK **21+**, Maven **3.9+**.
+This host has JDK 26.0.2 and Maven 3.10.1; the WAR targets Java 21.
+
+```bash
+npm ci --prefix frontend
+npm test --prefix frontend
+npm run build --prefix frontend
+mvn -B -ntp -f backend/pom.xml verify
+```
+
+Run the Java API and frontend in separate terminals:
+
+```bash
+mvn -f backend/pom.xml -Pdev package exec:exec
+npm run dev --prefix frontend
+```
+
+Open <http://localhost:5173/dashboard> on the machine running these commands.
+Click **Check connection** to call the real Java health endpoint through Vite's
+`/api` proxy. Both servers bind loopback only; stop them with Ctrl+C.
+This does not deploy the app or change the agent GUI.
+
+Browser and real-integration verification (ports 8080 and 5173 must be free):
+
+```bash
+cd frontend && npx playwright install chromium && cd ..
+npm run test:e2e --prefix frontend
+node scripts/verify-foundation.mjs
+```
+
+On this sandboxed host, use `NPM_CONFIG_CACHE=/tmp/kanban-npm-cache`,
+`PLAYWRIGHT_BROWSERS_PATH="$PWD/.tools/playwright"`, and
+`MVN=/home/bakorz/.local/bin/mvn` for the integration script. Maven can use
+`MAVEN_REPO_LOCAL="$PWD/backend/.m2"` for the integration script if its home cache is unavailable.
+For direct Maven commands, add `-Dmaven.repo.local="$PWD/backend/.m2"` as a command argument.
+See the [frontend guide](<frontend/README.md>) and [backend guide](<backend/README.md>).
+The health endpoint is public liveness only; all other API routes currently reject
+requests, including requests containing an unverified token.
 
 ## Security
 
