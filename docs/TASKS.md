@@ -6,7 +6,7 @@ Baseline: [PRD](<PRD.md>) · [Setup and credentials](<SETUP.md>)
 
 ## How to use this backlog
 
-All implementation tasks below are **not started**. Planning documents exist; the new application, migrations, and tests have not been implemented. The existing Spring Boot repository remains unchanged.
+This document defines task acceptance criteria, not live completion status. See [implementation progress](<PROGRESS.md>) for approved scope, completed foundation work, remaining gates, and verification results. The existing Spring Boot repository remains unchanged.
 
 Complete phases in dependency order. UI work can run against fixtures while backend work proceeds, but fixture-only behavior never counts as an integrated feature.
 

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <meta name="description" content="A personal Kanban board with three columns, cards that keep their priority and due date, and no dragging." />
+    <meta name="site-kind" content="software" />
+    <meta name="page-type" content="software" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Kanban: a personal board for your tasks" />
+    <meta property="og:description" content="Three columns, cards with a priority and a due date, and one clear next step." />
+    <meta property="og:image" content="/share.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script>
+      (function () {
+        var path = location.pathname;
+        if (path !== '/' && path !== '/preview') return;
+        var head = document.head;
+        var root = document.documentElement;
+        root.dataset.type = 'software';
+        root.dataset.radius = 'soft';
+        root.dataset.buttons = 'solid';
+        root.dataset.motion = '';
+        var links = [
+          ['preconnect', 'https://fonts.googleapis.com'],
+          ['preconnect', 'https://fonts.gstatic.com'],
+          ['stylesheet', 'https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap'],
+          ['stylesheet', '/assets/system.css'],
+          ['stylesheet', '/assets/ui/cards.css'],
+          ['stylesheet', '/assets/motion/motion.css'],
+          ['stylesheet', '/assets/layout/layout.css'],
+          ['stylesheet', '/landing-tokens.css']
+        ];
+        links.forEach(function (item) {
+          var link = document.createElement('link');
+          link.rel = item[0];
+          link.href = item[1];
+          if (item[0] === 'preconnect') link.crossOrigin = 'anonymous';
+          link.dataset.landingKit = '1';
+          head.appendChild(link);
+        });
+      })();
+    </script>
+    <title>Kanban: a personal board for your tasks</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
