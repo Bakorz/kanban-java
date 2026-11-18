@@ -5,13 +5,12 @@ import { useAuth } from './Auth.jsx';
 import { ConfirmDelete, ErrorMessage, Field, Page, useOperation } from './ui.jsx';
 
 function useApi() {
-  const { client, clear, generation, session } = useAuth();
-  const scope = `${generation}:${session?.user?.id || ''}`;
-  const currentScope = useRef(scope);
-  currentScope.current = scope;
+  const { client, clear, getScope } = useAuth();
   const active = useRef(true);
   useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
-  return useMemo(() => createApi({ client, onAuthFailure: clear, isCurrent: () => active.current && currentScope.current === scope }), [client, clear, scope]);
+  // getScope is a stable ref accessor updated synchronously by SDK auth events,
+  // so requests cannot outlive an account switch even before React re-renders.
+  return useMemo(() => createApi({ client, onAuthFailure: clear, getScope, isActive: () => active.current }), [client, clear, getScope]);
 }
 function useResource(path) {
   const api = useApi();

@@ -4,11 +4,17 @@ export class ApiError extends Error {
   }
 }
 
-export function createApi({ client, onAuthFailure = () => {}, isCurrent = () => true, fetcher = (...args) => fetch(...args), timeoutMs = 12000 }) {
+export function createApi({ client, onAuthFailure = () => {}, getScope = () => 0, isActive = () => true, fetcher = (...args) => fetch(...args), timeoutMs = 12000 }) {
   return async function api(path, { method = 'GET', body } = {}) {
     if (!/^\/api\/(?:boards|columns|cards)(?:\/[A-Za-z0-9_-]+)*(?:\/)?$/.test(path)) throw new ApiError('Invalid API path.');
     if (!['GET', 'POST', 'PUT', 'DELETE'].includes(method)) throw new ApiError('Unsupported API method.');
-    const assertCurrent = () => { if (!isCurrent()) throw new ApiError('This workspace session changed. Reload the current workspace.', 0, 'STALE_SESSION'); };
+    // Capture the synchronously maintained auth scope before any await. A sign-out,
+    // sign-in, or identity switch invalidates this request even if React has not yet
+    // re-rendered, so an old account's delayed 401 cannot clear the new account.
+    const startedScope = getScope();
+    const assertCurrent = () => {
+      if (!isActive() || getScope() !== startedScope) throw new ApiError('This workspace session changed. Reload the current workspace.', 0, 'STALE_SESSION');
+    };
     const failAuth = () => { assertCurrent(); onAuthFailure(); throw new ApiError('Your session has expired. Please log in again.', 401, 'UNAUTHORIZED'); };
     async function sdkCall(action) {
       let timer;

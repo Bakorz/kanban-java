@@ -13,9 +13,15 @@ export function safeRedirect(value, fallback = '/dashboard') {
 export function AuthProvider({ children, client = authClient }) {
   const [state, setState] = useState({ session: null, loading: !!client, recovery: false, error: '', generation: 0 });
   const identity = useRef(null);
+  // Updated synchronously inside SDK callbacks, before React renders. In-flight API
+  // requests compare against this ref so an old account's response can never clear
+  // a newly signed-in account during the render/microtask gap.
+  const scope = useRef(0);
+  const getScope = useCallback(() => scope.current, []);
   const clear = useCallback((message = 'Your session has expired. Please log in again.') => {
     identity.current = null;
-    setState((s) => ({ session: null, recovery: false, loading: false, error: message, generation: s.generation + 1 }));
+    scope.current += 1;
+    setState({ session: null, recovery: false, loading: false, error: message, generation: scope.current });
     // Only the SDK owns persistent authentication storage.
     if (client) void client.auth.signOut({ scope: 'local' }).catch(() => {});
   }, [client]);
@@ -28,7 +34,8 @@ export function AuthProvider({ children, client = authClient }) {
       const id = session?.user?.id ?? null;
       const changed = identity.current !== id;
       identity.current = id;
-      setState((s) => ({ session, loading: false, error: '', generation: s.generation + (changed || event === 'SIGNED_OUT' ? 1 : 0), recovery: event === 'PASSWORD_RECOVERY' ? !!session : (event === 'SIGNED_OUT' || changed ? false : s.recovery) }));
+      if (changed || event === 'SIGNED_OUT') scope.current += 1;
+      setState((s) => ({ session, loading: false, error: '', generation: scope.current, recovery: event === 'PASSWORD_RECOVERY' ? !!session : (event === 'SIGNED_OUT' || changed ? false : s.recovery) }));
     }
     const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => { observed = true; accept(event, session); });
     client.auth.getSession().then(({ data, error }) => {
@@ -39,6 +46,6 @@ export function AuthProvider({ children, client = authClient }) {
     return () => { active = false; subscription.unsubscribe(); };
   }, [client]);
   const finishRecovery = () => setState((s) => ({ ...s, recovery: false }));
-  return <AuthContext.Provider value={{ ...state, client, clear, finishRecovery }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ ...state, client, clear, finishRecovery, getScope }}>{children}</AuthContext.Provider>;
 }
 export function useAuth() { return useContext(AuthContext); }

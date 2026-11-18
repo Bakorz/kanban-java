@@ -1,8 +1,8 @@
-# Paused handoff — 2026-11-18
+# Handoff — 2026-11-18
 
-Owner explicitly asked to stop to conserve tokens and continue later. Persisted
-goal is PAUSED. Do not restart tests, agents, live operations or releases until
-owner asks to continue.
+Resumed after an owner-requested pause. The two review findings below are fixed and
+locally reverified; live Supabase acceptance is still pending. Persisted goal is active.
+Do not deploy or promote to `main` without separate owner approval.
 
 ## Repository
 
@@ -11,8 +11,8 @@ owner asks to continue.
 - Original Spring Boot project untouched.
 - Core backend committed as `357d52d`: clean package passed **43 tests**, zero skips,
   using the real restricted `kanban_runtime` role against isolated PostgreSQL.
-- Schema and local setup already pushed; current core frontend checkpoint must be
-  treated as work in progress until its final regression run/review is complete.
+- Frontend fix checkpoint adds synchronous auth-scope guarding and the saved-mutation
+  regression.
 
 ## Verified evidence
 
@@ -21,32 +21,27 @@ owner asks to continue.
 - Browser UI → Java → PostgreSQL lifecycle passed desktop/mobile **2 tests** with
   synthetic Auth. That browser run preceded the restricted-role fixture change;
   repeat it once final frontend fixes are reviewed.
-- Frontend final agent report: unit **47/47**, production build, browser **12 tests**
-  passed (2 realCRUD tests intentionally skipped in mock suite). Includes SDK PKCE,
-  pending controls, saved-but-refresh-failed regression. Build warns of ~501.84kB chunk.
-  Agent collected all its jobs and confirmed none running. Parent has not rerun this
-  latest47-test checkpoint; earlier41-test and realCRUD runs were parent-verified.
-- IMPORTANT open bug confirmed by frontend agent: request scope still updates via
-  render/unmount, NOT synchronous SDK identity ref. The pre-React-commit microtask
-  account-switch race remains. Fix it before declaring review finding1 resolved.
+- Frontend final verification: unit **48/48**, production build, browser **12** mocked
+  tests, and **2** real desktop/mobile CRUD tests against Java + PostgreSQL passed.
+  Build still warns of a ~502kB chunk.
+- Review finding1 (delayed A 401 signing out B): RESOLVED in code by a synchronous
+  auth-scope ref updated in SDK callbacks before React renders; API requests capture
+  the starting scope and discard stale responses. Regression tests cover delayed 401
+  after scope change and SDK A→B switch with old A 401.
+- Review finding2 (committed create replayable after refresh failure): RESOLVED; editors
+  and confirmations close immediately after a successful mutation, reload failure is
+  shown separately, and retry reloads only. POST201→GET503 regression passes.
+- Reviewer verification of these two fixes is requested; parent tests pass regardless.
 - Public JWKS is available with ES256/P-256 keys. Public Auth settings last reported
   `mailer_autoconfirm:false`, despite owner selecting confirmation OFF. Owner was
   asked to save/recheck that setting. No live accounts were created.
 
-## Review findings needing final resolution check
+## Review findings
 
-Read-only reviewer identified:
-1. Delayed account-A request401 could clear/sign out newly switched accountB.
-   Frontend is adding request-scope guards and regression tests. Ensure scope changes
-   synchronously with SDK auth events, not only after React renders/unmounts.
-2. Successful create followed by failed GET refresh could leave a replayable form.
-   Frontend is closing committed editors/confirmations before refresh and showing a
-   separate saved-but-refresh-failed state. Verify POST201→GET503 cannot duplicatePOST.
-
-Reviewer agent `5a23e138-8adb-41e2-9a6f-b78b3e05c015` can verify only these fixes later.
-Backend agent `ced3f44d-c0a8-4919-9264-e34ef6671b98` finished; frontend agent
-`8b11d2a8-fe6c-4818-8c35-adfa86063a00` was instructed to stop and collect/cancel jobs.
-No additional feature work should run while paused.
+Both material findings from the independent read-only review are fixed and covered by
+regression tests (see Verified evidence). Reviewer `5a23e138-8adb-41e2-9a6f-b78b3e05c015`
+was asked for a focused resolution check; it does not execute code.
+No implementation agent is currently running.
 
 ## Owner choices/access
 
@@ -58,13 +53,13 @@ No additional feature work should run while paused.
 - No confirmation of executed live migrations or private runtime credentials yet.
 - Do not request passwords/tokens/service-role keys in chat or commit real env files.
 
-## Resume order
+## Resume order (current position: step 5 complete locally)
 
-1. Inspect Git status/lastcommit and agent final reports; do not assume narrated results.
-2. Review frontend synchronous auth scope + committed-save refresh regression fixes.
-3. Run frontend unit/build/audit/browser suite and realCRUD browser mode again.
-4. Recheck test container/server cleanup, stage secret/whitespace scan, push checkpoint.
-5. Check full PR CI (green older foundation is not evidence for new core changes).
+1. Inspect Git status/lastcommit and agent reports; do not assume narrated results. DONE
+2. Review frontend synchronous auth scope + committed-save refresh regression fixes. DONE
+3. Run frontend unit/build/audit/browser suite and realCRUD browser mode again. DONE (48/12/2, audit0)
+4. Recheck test container/server cleanup, stage secret/whitespace scan, push checkpoint. DONE
+5. Check full PR CI. IN PROGRESS for the latest fix commit.
 6. Owner confirms migrations/settings; privately configure restricted runtime connection
    and frontend public values on own computer. Verify actual Supabase login/two-user
    privacy/TLS/recovery; these are NOT yet accepted.

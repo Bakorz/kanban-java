@@ -45,11 +45,17 @@ keyboard-usable controls, and no decorative animation or branding exercise.
   migration/bootstrap/trigger DDL use a separate test-only administrator connection.
   The container readiness race was fixed by probing its published loopback JDBC
   endpoint with a bounded deadline. Restricted-role denial assertions pass.
-- Paused at owner's request. Frontend agent reports47 unit tests/build and12 mocked
-  browser tests pass; saved-but-refresh-failed regression is fixed. A synchronous
-  SDK-account-switch microtask race remains OPEN; current render-time scope guard
-  is not sufficient. Do not release this checkpoint as fully reviewed.
-- See HANDOFF.md for exact resume steps. No implementation agents/jobs remain running.
+- Paused checkpoint resumed. Synchronous account-switch race fixed by a monotonic
+  auth-scope ref updated inside SDK callbacks before React renders; every API request
+  captures its starting scope, and stale responses discard without refreshing,
+  retrying, or signing out the current account. The saved-but-refresh-failed path
+  closes committed editors/confirmations before reload and reports separately.
+- Parent-verified after the fix: frontend **48 unit tests**, production build,
+  shipped-dependency audit zero, **12 mocked browser tests**, and **2 real
+  desktop/mobile browser CRUD runs** against Java + restricted-role PostgreSQL
+  (synthetic Auth). Backend remains **43 tests**, zero skips. No temporary listeners
+  or containers remained.
+- See HANDOFF.md for live acceptance steps. No implementation agents/jobs remain running.
 
 These are local fixture-based results, not a completed live Supabase demo.
 A health success checks Java liveness only, never database/auth readiness.

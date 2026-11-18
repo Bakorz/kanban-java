@@ -12,13 +12,23 @@ describe('central API policy', () => {
     expect(fetcher.mock.calls[1][1]).toMatchObject({ credentials: 'omit', redirect: 'error', cache: 'no-store', headers: { Authorization: 'Bearer refreshed-token' } });
   });
   it('discards delayed old-account 401 without refreshing or clearing the current account', async () => {
-    const { client } = mockAuth(testSession); let current = true; let resolve;
+    const { client } = mockAuth(testSession); let scope = 1; let resolve;
     const fetcher = vi.fn(() => new Promise((r) => { resolve = r; })); const clear = vi.fn();
-    const request = createApi({ client, fetcher, onAuthFailure: clear, isCurrent: () => current })('/api/boards');
+    const request = createApi({ client, fetcher, onAuthFailure: clear, getScope: () => scope })('/api/boards');
     await vi.waitFor(() => expect(resolve).toBeTypeOf('function'));
-    current = false; resolve(response({}, 401));
+    scope = 2; resolve(response({}, 401));
     await expect(request).rejects.toMatchObject({ code: 'STALE_SESSION' });
     expect(client.auth.refreshSession).not.toHaveBeenCalled(); expect(clear).not.toHaveBeenCalled(); expect(fetcher).toHaveBeenCalledOnce();
+  });
+  it('blocks a stale 401 even when the account switch happens before React renders', async () => {
+    const { client } = mockAuth(testSession); let scope = 7; let resolve;
+    const fetcher = vi.fn(() => new Promise((r) => { resolve = r; })); const clear = vi.fn();
+    const request = createApi({ client, fetcher, onAuthFailure: clear, getScope: () => scope })('/api/cards/id', { method: 'DELETE' });
+    await vi.waitFor(() => expect(resolve).toBeTypeOf('function'));
+    // Simulates a synchronous SDK callback: the ref changes without any awaited render.
+    scope += 1; resolve(response({}, 401));
+    await expect(request).rejects.toMatchObject({ code: 'STALE_SESSION' });
+    expect(clear).not.toHaveBeenCalled(); expect(fetcher).toHaveBeenCalledOnce();
   });
   it('bounds repeated 401s and clears session state', async () => {
     const { client } = mockAuth(testSession); const onAuthFailure = vi.fn(); const fetcher = vi.fn(async () => response({}, 401));
