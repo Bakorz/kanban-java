@@ -9,7 +9,7 @@ describe('central API policy', () => {
     const fetcher = vi.fn().mockResolvedValueOnce(response({}, 401)).mockResolvedValueOnce(response({ boards: [] }));
     const api = createApi({ client, fetcher }); expect(await api('/api/boards')).toEqual({ boards: [] });
     expect(fetcher).toHaveBeenCalledTimes(2); expect(client.auth.refreshSession).toHaveBeenCalledOnce();
-    expect(fetcher.mock.calls[1][1]).toMatchObject({ credentials: 'omit', redirect: 'error', cache: 'no-store', headers: { Authorization: 'Bearer refreshed-token' } });
+    expect(fetcher.mock.calls[1][1]).toMatchObject({ credentials: 'same-origin', redirect: 'error', cache: 'no-store', headers: { Authorization: 'Bearer refreshed-token' } });
   });
   it('discards delayed old-account 401 without refreshing or clearing the current account', async () => {
     const { client } = mockAuth(testSession); let scope = 1; let resolve;

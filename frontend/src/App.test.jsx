@@ -159,6 +159,6 @@ describe('health UI', () => {
   it('checks liveness only on request and reports honestly', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => reply())); render(<HealthCheck />); expect(fetch).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Check connection' })); expect(await screen.findByText(/Java API is reachable/)).toBeInTheDocument();
-    expect(fetch).toHaveBeenCalledWith('/api/health', expect.objectContaining({ credentials: 'omit', cache: 'no-store', redirect: 'error' }));
+    expect(fetch).toHaveBeenCalledWith('/api/health', expect.objectContaining({ credentials: 'same-origin', cache: 'no-store', redirect: 'error' }));
   });
 });
