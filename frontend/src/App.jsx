@@ -58,6 +58,7 @@ function Shell() {
   const auth = useAuth();
   const op = useOperation();
   return <>
+    <style>{'main h1[tabindex="-1"]:focus{outline:none}'}</style>
     <a className="skip-link" href="#content">Skip to main content</a>
     <header className="app-header"><Link className="brand" to="/">Kanban</Link>
       <nav aria-label="Primary"><NavLink to="/" end>Home</NavLink><NavLink to="/dashboard">My boards</NavLink>

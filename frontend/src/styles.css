@@ -1,27 +1,27 @@
 :root {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #1d2b36;
-  background: #f5f7f9;
+  color: #0b1b33;
+  background: #ffffff;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   line-height: 1.6;
-  --ink: #1d2b36;
-  --muted: #52616f;
-  --accent: #175a94;
-  --line: #cbd4dd;
+  --ink: #0b1b33;
+  --muted: #43536b;
+  --accent: #1d4ed8;
+  --line: #dbe3ef;
 }
 * { box-sizing: border-box; }
 body { margin: 0; min-inline-size: 280px; }
-::selection { background: #c9e3fa; color: #12334e; }
+::selection { background: #dbe8ff; color: #0b1b33; }
 a { color: var(--accent); text-underline-offset: 0.2em; overflow-wrap: anywhere; }
 a:hover { text-decoration-thickness: 2px; }
 button, .button { font: inherit; font-weight: 600; min-block-size: 44px; padding: 0.65rem 1.1rem; border: 1px solid var(--accent); border-radius: 6px; background: #fff; color: var(--accent); cursor: pointer; }
-button:hover, .button:hover { background: #e8f1fa; }
-button:disabled { cursor: wait; color: #52616f; border-color: #8998a6; background: #edf1f5; }
+button:hover, .button:hover { background: #eef4ff; }
+button:disabled { cursor: wait; color: #43536b; border-color: #94a3b8; background: #f1f5fb; }
 .button { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
 .primary { background: var(--accent); color: #fff; }
-.primary:hover { background: #104572; color: #fff; }
-:focus-visible { outline: 3px solid #175a94; outline-offset: 4px; }
+.primary:hover { background: #1e40af; color: #fff; }
+:focus-visible { outline: 3px solid #1d4ed8; outline-offset: 4px; }
 h1 { margin: 0 0 0.45rem; font-size: clamp(1.8rem, 3vw, 2.35rem); line-height: 1.25; letter-spacing: -0.025em; overflow-wrap: anywhere; }
 h2 { margin: 0 0 0.55rem; font-size: 1.25rem; line-height: 1.35; }
 h3 { margin: 0 0 0.5rem; font-size: 1rem; }
@@ -33,14 +33,14 @@ p { margin: 0 0 1rem; max-inline-size: 72ch; overflow-wrap: anywhere; }
 .app-header nav a[aria-current="page"] { font-weight: 700; text-decoration: underline; }
 main { max-inline-size: 1120px; margin: 0 auto; padding: 2.5rem 1.25rem 3rem; min-block-size: calc(100svh - 180px); }
 .intro { color: var(--muted); font-size: 1.05rem; margin-block-end: 1.8rem; }
-.notice { background: #eaf1f7; border: 1px solid #becfdf; padding: 1rem 1.2rem; border-radius: 6px; margin-block: 1.5rem; max-inline-size: 78ch; }
+.notice { background: #eef4ff; border: 1px solid #cfdcee; padding: 1rem 1.2rem; border-radius: 6px; margin-block: 1.5rem; max-inline-size: 78ch; }
 .notice p { margin: 0.25rem 0 0; }
 .board-section { margin-block-start: 2.5rem; }
 .board-section > p { color: var(--muted); }
 .columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-block-start: 1.2rem; }
-.column { background: #edf1f5; padding: 1.25rem; border-block-start: 2px solid #8998a6; min-block-size: 180px; }
-.column:nth-child(2) { border-block-start-color: #175a94; }
-.column:nth-child(3) { border-block-start-color: #2a6c52; }
+.column { background: #f1f5fb; padding: 1.25rem; border-block-start: 2px solid #94a3b8; min-block-size: 180px; }
+.column:nth-child(2) { border-block-start-color: #1d4ed8; }
+.column:nth-child(3) { border-block-start-color: #1e40af; }
 .column p { color: var(--muted); font-size: 0.9rem; }
 .column .column-empty { margin-block-start: 1.7rem; font-size: 0.85rem; }
 .connection { display: flex; flex-wrap: wrap; gap: 0.7rem 1.5rem; align-items: start; border-block-start: 1px solid var(--line); padding-block-start: 1.75rem; margin-block-start: 2.5rem; }
@@ -75,7 +75,7 @@ button, .button { min-block-size: 48px; }
 .board-item { padding: 1.25rem; background: #fff; border: 1px solid var(--line); border-radius: 6px; min-inline-size: 0; }
 .card { margin-block-start: 1rem; padding: 1rem; background: #fff; border: 1px solid var(--line); border-radius: 6px; overflow-wrap: anywhere; }
 .card h3 { font-size: 1.05rem; }
-.card .card-meta { font-size: 0.85rem; color: #455564; }
+.card .card-meta { font-size: 0.85rem; color: #43536b; }
 .column { min-inline-size: 0; padding: 1rem; }
 .column h2 { font-size: 1.1rem; overflow-wrap: anywhere; }
 .column > button { inline-size: 100%; }
