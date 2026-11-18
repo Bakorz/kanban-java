@@ -21,15 +21,28 @@ public final class JsonResponses {
         response.getWriter().write(json);
     }
 
+    public static void noContent(HttpServletResponse response) {
+        response.setStatus(204);
+        headers(response);
+    }
+
     public static void error(HttpServletResponse response, int status) throws IOException {
-        String code = switch (status) {
+        error(response, status, switch (status) {
             case 400 -> "BAD_REQUEST";
             case 401 -> "UNAUTHORIZED";
             case 403 -> "FORBIDDEN";
             case 404 -> "NOT_FOUND";
             case 405 -> "METHOD_NOT_ALLOWED";
+            case 413 -> "PAYLOAD_TOO_LARGE";
+            case 415 -> "UNSUPPORTED_MEDIA_TYPE";
+            case 503 -> "UNAVAILABLE";
             default -> "INTERNAL_ERROR";
-        };
-        write(response, status, "{\"error\":{\"code\":\"" + code + "\"}}");
+        }, null);
+    }
+
+    public static void error(HttpServletResponse response, int status, String code, String message) throws IOException {
+        if (status == 405 && response.getHeader("Allow") == null) response.setHeader("Allow", "GET");
+        response.setStatus(status);
+        write(response, status, ApiJson.error(status, code, message));
     }
 }

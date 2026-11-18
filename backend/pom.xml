@@ -15,6 +15,23 @@
   </properties>
   <dependencies>
     <dependency>
+      <groupId>com.zaxxer</groupId><artifactId>HikariCP</artifactId><version>7.1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.postgresql</groupId><artifactId>postgresql</artifactId><version>42.7.14</version>
+    </dependency>
+    <!-- Intentionally suppress third-party pool configuration/connection logs, including at DEBUG.
+         Application lifecycle emits categorical messages through ServletContext only. -->
+    <dependency>
+      <groupId>org.slf4j</groupId><artifactId>slf4j-nop</artifactId><version>2.0.17</version>
+    </dependency>
+    <dependency>
+      <groupId>com.nimbusds</groupId><artifactId>nimbus-jose-jwt</artifactId><version>10.10</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-databind</artifactId><version>2.23.0</version>
+    </dependency>
+    <dependency>
       <groupId>jakarta.servlet</groupId><artifactId>jakarta.servlet-api</artifactId><version>6.1.0</version><scope>provided</scope>
     </dependency>
     <dependency>
@@ -44,6 +61,22 @@
     </plugins>
   </build>
   <profiles>
+    <profile>
+      <id>e2e</id>
+      <build><plugins><plugin>
+        <groupId>org.codehaus.mojo</groupId><artifactId>exec-maven-plugin</artifactId><version>3.7.0</version>
+        <configuration>
+          <executable>${java.home}/bin/java</executable>
+          <classpathScope>test</classpathScope>
+          <arguments>
+            <argument>--add-opens=java.base/java.lang=ALL-UNNAMED</argument>
+            <argument>--add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED</argument>
+            <argument>-cp</argument><classpath/>
+            <argument>id.bakorz.kanban.FixtureServer</argument>
+          </arguments>
+        </configuration>
+      </plugin></plugins></build>
+    </profile>
     <profile>
       <id>dev</id>
       <build><plugins><plugin>

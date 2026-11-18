@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import static org.junit.jupiter.api.Assertions.*;
 
+@org.junit.jupiter.api.Timeout(30)
 class BackendIntegrationTest {
     private static EmbeddedTomcat server;
     private static HttpClient client;
