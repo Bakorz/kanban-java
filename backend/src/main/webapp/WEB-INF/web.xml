@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_1.xsd"
+         version="6.1" metadata-complete="true">
+  <display-name>Kanban API</display-name>
+  <listener><listener-class>id.bakorz.kanban.lifecycle.ApplicationLifecycle</listener-class></listener>
+  <filter>
+    <filter-name>api-boundary</filter-name>
+    <filter-class>id.bakorz.kanban.http.ApiBoundaryFilter</filter-class>
+  </filter>
+  <filter-mapping>
+    <filter-name>api-boundary</filter-name><url-pattern>/api/*</url-pattern>
+    <dispatcher>REQUEST</dispatcher><dispatcher>FORWARD</dispatcher><dispatcher>ASYNC</dispatcher>
+  </filter-mapping>
+  <servlet>
+    <servlet-name>health</servlet-name><servlet-class>id.bakorz.kanban.http.HealthServlet</servlet-class><load-on-startup>1</load-on-startup>
+  </servlet>
+  <servlet-mapping><servlet-name>health</servlet-name><url-pattern>/api/health</url-pattern></servlet-mapping>
+  <servlet>
+    <servlet-name>json-error</servlet-name><servlet-class>id.bakorz.kanban.http.ErrorServlet</servlet-class>
+  </servlet>
+  <servlet-mapping><servlet-name>json-error</servlet-name><url-pattern>/internal-error</url-pattern></servlet-mapping>
+  <servlet>
+    <servlet-name>api</servlet-name><servlet-class>id.bakorz.kanban.http.ApiServlet</servlet-class><load-on-startup>1</load-on-startup>
+  </servlet>
+  <servlet-mapping><servlet-name>api</servlet-name><url-pattern>/api/*</url-pattern></servlet-mapping>
+  <error-page><error-code>400</error-code><location>/internal-error</location></error-page>
+  <error-page><error-code>401</error-code><location>/internal-error</location></error-page>
+  <error-page><error-code>403</error-code><location>/internal-error</location></error-page>
+  <error-page><error-code>404</error-code><location>/internal-error</location></error-page>
+  <error-page><error-code>405</error-code><location>/internal-error</location></error-page>
+  <error-page><error-code>500</error-code><location>/internal-error</location></error-page>
+  <error-page><exception-type>java.lang.Throwable</exception-type><location>/internal-error</location></error-page>
+  <deny-uncovered-http-methods/>
+</web-app>
