@@ -32,9 +32,9 @@ Do not deploy or promote to `main` without separate owner approval.
   and confirmations close immediately after a successful mutation, reload failure is
   shown separately, and retry reloads only. POST201→GET503 regression passes.
 - Reviewer verification of these two fixes is requested; parent tests pass regardless.
-- Public JWKS is available with ES256/P-256 keys. Public Auth settings last reported
-  `mailer_autoconfirm:false`, despite owner selecting confirmation OFF. Owner was
-  asked to save/recheck that setting. No live accounts were created.
+- Public JWKS is available with ES256/P-256 keys. Public Auth settings now report
+  `mailer_autoconfirm: true`, so the owner's confirmation-off development choice is
+  saved. No live accounts were created by the agent.
 
 ## Review findings
 

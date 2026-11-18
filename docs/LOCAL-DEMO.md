@@ -2,9 +2,9 @@
 
 Target approved by owner: own computer, English personal Kanban, development
 Supabase project only. Owner chose email confirmation OFF for this disposable
-project; public settings last checked still indicated confirmation required, so
-save/recheck that setting before live signup. Confirmation OFF does not verify
-email ownership. Password recovery still needs mail delivery.
+project; public settings now report `mailer_autoconfirm: true`, confirming that
+choice is saved. Confirmation OFF does not verify email ownership. Password
+recovery still needs mail delivery.
 
 **Current checkpoint:** Auth/CRUD code is implemented and locally verified,
 including real browser CRUD against Java and isolated PostgreSQL. Actual Supabase
