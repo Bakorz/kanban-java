@@ -45,6 +45,12 @@ export function HealthCheck() {
 }
 
 
+const AUTH_ROUTES = new Set(['/login', '/register', '/forgot-password', '/reset-password', '/auth/reset-password', '/auth/callback']);
+
+function BrandMark() {
+  return <span className="brand__mark" aria-hidden="true"><i /><i /><i /></span>;
+}
+
 function Protected({ children }) {
   const auth = useAuth();
   const location = useLocation();
@@ -57,12 +63,14 @@ function Protected({ children }) {
 function Shell() {
   const auth = useAuth();
   const op = useOperation();
+  const { pathname } = useLocation();
+  const onAuth = AUTH_ROUTES.has(pathname);
   return <>
-    <style>{'main h1[tabindex="-1"]:focus{outline:none}'}</style>
+    <style>{'main h1[tabindex="-1"]:focus{outline:none;text-decoration:underline;text-decoration-color:#1d4ed8;text-decoration-thickness:2px;text-underline-offset:8px}'}</style>
     <a className="skip-link" href="#content">Skip to main content</a>
-    <header className="app-header"><Link className="brand" to="/">Kanban</Link>
-      <nav aria-label="Primary"><NavLink to="/" end>Home</NavLink><NavLink to="/dashboard">My boards</NavLink>
-        {auth.session ? <button type="button" disabled={op.pending} onClick={() => { void op.run(async () => { const { error } = await auth.client.auth.signOut(); if (error) throw error; }); }}>{op.pending ? 'Logging out…' : 'Log out'}</button> : <NavLink to="/login">Log in</NavLink>}
+    <header className={`app-header${onAuth ? ' app-header--auth' : ''}`}><Link className="brand" to="/"><BrandMark />Kanban</Link>
+      <nav aria-label={onAuth ? 'Account' : 'Primary'}>{onAuth ? <Link className="app-header__back" to="/">Back to home</Link> : <><NavLink to="/" end>Home</NavLink><NavLink to="/dashboard">My boards</NavLink>
+        {auth.session ? <button type="button" disabled={op.pending} onClick={() => { void op.run(async () => { const { error } = await auth.client.auth.signOut(); if (error) throw error; }); }}>{op.pending ? 'Logging out…' : 'Log out'}</button> : <NavLink to="/login">Log in</NavLink>}</>}
       </nav>
     </header>
     <ErrorMessage error={op.error} />
@@ -78,7 +86,7 @@ function Shell() {
       <Route path="/auth/callback" element={<AuthPage key="callback" kind="callback" />} />
       <Route path="*" element={<Page title="Page not found"><p>This page does not exist.</p><Link to="/dashboard">Return to my boards</Link></Page>} />
     </Routes>
-    <footer className="app-footer">Personal Kanban · Your boards, one task at a time</footer>
+    <footer className={`app-footer${onAuth ? ' app-footer--auth' : ''}`}>Personal Kanban · Your boards, one task at a time</footer>
   </>;
 }
 export function App({ authClient }) {

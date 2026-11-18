@@ -92,7 +92,7 @@ test('SDK login board/card CRUD keyboard moves null clearing and logout', async 
   await expect(page.getByRole('heading', { name: 'My boards', level: 1 })).toBeVisible();
   await expect(page.getByText('No boards yet.', { exact: false })).toBeVisible();
   await page.getByRole('button', { name: 'Log out', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Log in', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Log in to Kanban', level: 1 })).toBeVisible();
 });
 
 test('SDK PKCE recovery callback emits recovery permission and updates password', async ({ page }) => {
@@ -104,7 +104,7 @@ test('SDK PKCE recovery callback emits recovery permission and updates password'
   await page.goto('/forgot-password');
   await page.getByLabel('Email (required)').fill(user.email);
   await page.getByRole('button', { name: 'Send recovery link' }).click();
-  await expect(page.getByRole('status')).toContainText('If an account exists');
+  await expect(page.getByRole('status').filter({ hasText: 'If an account exists' })).toBeVisible();
   // The real SDK generated and persisted its PKCE verifier during /recover.
   // Only the provider's code exchange response is mocked; no storage injection.
   await page.goto('/reset-password?code=fixture-recovery-code');
@@ -112,7 +112,7 @@ test('SDK PKCE recovery callback emits recovery permission and updates password'
   expect(exchanges).toBe(1);
   await page.getByLabel('New password (required)').fill('recovered-password');
   await page.getByRole('button', { name: 'Update password' }).click();
-  await expect(page.getByRole('status')).toContainText('password has been updated');
+  await expect(page.getByRole('status').filter({ hasText: 'password has been updated' })).toBeVisible();
   expect(updates).toBe(1);
 });
 
@@ -121,7 +121,7 @@ test('confirmation-required signup and non-recovery session cannot update passwo
   await authRoutes(page, true);
   await page.goto('/register');
   await page.getByLabel('Email (required)').fill(user.email); await page.getByLabel('Password (required)').fill('fixture-password'); await page.getByRole('button', { name: 'Create account', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('Check your email');
+  await expect(page.getByRole('status').filter({ hasText: 'Check your email' })).toBeVisible();
   await page.goto('/reset-password');
   await expect(page.getByText(/normal signed-in session cannot/)).toBeVisible(); await expect(page.getByLabel('New password (required)')).toHaveCount(0);
 });

@@ -17,9 +17,15 @@ describe('auth lifecycle and routes', () => {
     expect(screen.getAllByRole('link', { name: /Create an account/ }).length).toBeGreaterThan(0);
     for (const name of ['To Do', 'In Progress', 'Done']) expect(screen.getAllByText(name).length).toBeGreaterThan(0);
   });
+  it.each(['/login', '/register'])('shows a disabled Google placeholder at %s', async (path) => {
+    const { client } = mockAuth(); route(path, client);
+    const google = await screen.findByRole('button', { name: /Sign (in|up) with Google/ });
+    expect(google).toBeDisabled();
+    expect(google).toHaveTextContent('Soon');
+  });
   it.each(['/dashboard', '/boards/private'])('guards %s and gives actionable missing config', async (path) => {
     vi.stubGlobal('fetch', vi.fn()); route(path);
-    expect(await screen.findByRole('heading', { name: 'Log in', level: 1 })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Log in to Kanban', level: 1 })).toBeInTheDocument();
     expect(screen.getByText(/VITE_SUPABASE_PUBLISHABLE_KEY/)).toBeInTheDocument();
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument(); expect(fetch).not.toHaveBeenCalled();
   });
@@ -28,9 +34,9 @@ describe('auth lifecycle and routes', () => {
     fixture.client.auth.getSession.mockImplementation(() => new Promise((r) => { resolve = r; }));
     const view = route('/dashboard', fixture.client);
     expect(screen.getByRole('progressbar')).toHaveAccessibleName('Loading authentication');
-    expect(screen.queryByRole('heading', { name: 'Log in' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Log in to Kanban' })).not.toBeInTheDocument();
     await act(async () => resolve({ data: { session: null }, error: null }));
-    expect(await screen.findByRole('heading', { name: 'Log in', level: 1 })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Log in to Kanban', level: 1 })).toBeInTheDocument();
     view.unmount(); expect(fixture.unsubscribe).toHaveBeenCalledOnce();
   });
   it('does not redirect signup with a null session and blocks duplicate submissions', async () => {
@@ -42,7 +48,7 @@ describe('auth lifecycle and routes', () => {
     expect(client.auth.signUp).toHaveBeenCalledOnce();
     expect(screen.getByRole('button', { name: 'Please wait…' })).toBeDisabled();
     await act(async () => resolve({ data: { session: null }, error: null }));
-    expect(await screen.findByRole('status')).toHaveTextContent(/Check your email/);
+    expect(await screen.findByText(/Check your email/)).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'My boards' })).not.toBeInTheDocument();
   });
   it('supports confirmation-disabled signup returning an SDK session', async () => {
@@ -55,7 +61,7 @@ describe('auth lifecycle and routes', () => {
   it('gives a neutral recovery response even when provider rejects', async () => {
     const { client } = mockAuth(); client.auth.resetPasswordForEmail.mockRejectedValue(new Error('No account'));
     route('/forgot-password', client); await screen.findByLabelText('Email (required)'); fireEvent.change(screen.getByLabelText('Email (required)'), { target: { value: 'nobody@example.test' } }); fireEvent.submit(screen.getByRole('form'));
-    expect(await screen.findByRole('status')).toHaveTextContent('If an account exists'); expect(screen.queryByText('No account')).not.toBeInTheDocument();
+    expect(await screen.findByText(/If an account exists/)).toBeInTheDocument(); expect(screen.queryByText('No account')).not.toBeInTheDocument();
   });
   it.each(['/reset-password', '/auth/reset-password'])('rejects arbitrary signed-in sessions at %s', async (path) => {
     const { client } = mockAuth(testSession); route(path, client);
@@ -67,7 +73,7 @@ describe('auth lifecycle and routes', () => {
     await screen.findByText(/could not be verified/);
     await act(async () => emit('PASSWORD_RECOVERY', testSession));
     const input = await screen.findByLabelText('New password (required)'); fireEvent.change(input, { target: { value: 'new-password' } }); fireEvent.submit(screen.getByRole('form'));
-    expect(await screen.findByRole('status')).toHaveTextContent('password has been updated'); expect(client.auth.updateUser).toHaveBeenCalledWith({ password: 'new-password' });
+    expect(await screen.findByText(/password has been updated/)).toBeInTheDocument(); expect(client.auth.updateUser).toHaveBeenCalledWith({ password: 'new-password' });
   });
   it('invalidates workspace content when SDK changes identity and signs out', async () => {
     const { client, emit } = mockAuth(testSession); let count = 0;
@@ -75,7 +81,7 @@ describe('auth lifecycle and routes', () => {
     route('/dashboard', client); await screen.findByText('Private one');
     await act(async () => emit('SIGNED_IN', { ...testSession, user: { id: 'other-user' } }));
     expect(await screen.findByText('Private two')).toBeInTheDocument(); expect(screen.queryByText('Private one')).not.toBeInTheDocument();
-    await act(async () => emit('SIGNED_OUT', null)); expect(await screen.findByRole('heading', { name: 'Log in', level: 1 })).toBeInTheDocument(); expect(screen.queryByText('Private two')).not.toBeInTheDocument();
+    await act(async () => emit('SIGNED_OUT', null)); expect(await screen.findByRole('heading', { name: 'Log in to Kanban', level: 1 })).toBeInTheDocument(); expect(screen.queryByText('Private two')).not.toBeInTheDocument();
   });
   it('ignores an old-account pending 401 after switching to a new SDK account', async () => {
     const { client, emit } = mockAuth(testSession); let resolveOld; let calls = 0;

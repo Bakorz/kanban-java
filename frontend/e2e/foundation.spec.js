@@ -14,12 +14,12 @@ test('landing page is public and free of the old preview link', async ({ page })
 
 test('keyboard skip link and protected routes work without a session', async ({ page }) => {
   await page.goto('/dashboard');
-  await expect(page.getByRole('heading', { name: 'Log in', exact: true })).toBeFocused();
+  await expect(page.getByRole('heading', { name: 'Log in to Kanban', exact: true })).toBeFocused();
   await page.evaluate(() => { document.activeElement.blur(); document.body.tabIndex = -1; document.body.focus(); });
   await page.keyboard.press('Tab');
   await expect(page.getByRole('link', { name: 'Skip to main content' })).toBeFocused();
   await page.keyboard.press('Enter');
-  await expect(page.getByRole('heading', { name: 'Log in', exact: true })).toBeFocused();
+  await expect(page.getByRole('heading', { name: 'Log in to Kanban', exact: true })).toBeFocused();
   await page.keyboard.press('Tab');
   if (realApi) {
     await expect(page.getByRole('link', { name: 'Create an account' })).toBeFocused();

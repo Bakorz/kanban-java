@@ -74,9 +74,12 @@ follow redirects. The public landing page does not call it automatically.
 Routes: `/` (public landing page), `/preview` (redirects to `/`), `/dashboard`,
 `/boards/:boardId`, `/login`, `/register`, `/forgot-password`, `/reset-password`,
 `/auth/reset-password` (alias), `/auth/callback`, and a not-found screen.
-Workspace routes update the document title and focus their first heading. The
-landing page sets its own title and keeps the skip link as the first stop. The
-skip link targets the main content, not a large interactive container.
+Sign-in, registration and recovery share one centred card on a pale blue field;
+Google sign-in is a visible, disabled placeholder until an OAuth provider is
+configured. Workspace routes update the document title and focus their first
+heading. The landing page sets its own title and keeps the skip link as the
+first stop. The skip link targets the main content, not a large interactive
+container.
 
 The repository environment example contains placeholders only. Never commit a
 real project configuration or credentials.

@@ -27,7 +27,14 @@ h2 { margin: 0 0 0.55rem; font-size: 1.25rem; line-height: 1.35; }
 h3 { margin: 0 0 0.5rem; font-size: 1rem; }
 p { margin: 0 0 1rem; max-inline-size: 72ch; overflow-wrap: anywhere; }
 .app-header { background: #fff; border-block-end: 1px solid var(--line); padding: 1rem max(1.25rem, calc((100% - 1120px) / 2)); display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-.brand { flex-shrink: 0; white-space: nowrap; font-size: 1.2rem; font-weight: 750; color: var(--ink); text-decoration: none; }
+.brand { flex-shrink: 0; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.5rem; min-block-size: 44px; font-size: 1.2rem; font-weight: 750; color: var(--ink); text-decoration: none; }
+.brand__mark { display: inline-flex; flex-direction: column; justify-content: center; gap: 2px; inline-size: 22px; block-size: 22px; padding-inline: 5px; border-radius: 6px; background: var(--accent); flex: none; }
+.brand__mark i { display: block; block-size: 2px; border-radius: 1px; background: #fff; }
+.brand__mark i:nth-child(2) { inline-size: 70%; }
+.brand__mark i:nth-child(3) { inline-size: 42%; }
+.app-header__back { display: inline-flex; align-items: center; gap: 0.45rem; min-block-size: 44px; color: var(--muted); font-size: 0.86rem; font-weight: 600; text-decoration: none; }
+.app-header__back::before { content: "←"; font-weight: 400; }
+.app-header__back:hover { color: var(--accent); }
 .app-header nav { display: flex; gap: 1rem; flex-wrap: wrap; }
 .app-header nav a { padding: 0.4rem 0.2rem; min-block-size: 44px; display: inline-flex; align-items: center; text-decoration: none; }
 .app-header nav a[aria-current="page"] { font-weight: 700; text-decoration: underline; }
@@ -50,9 +57,6 @@ main { max-inline-size: 1120px; margin: 0 auto; padding: 2.5rem 1.25rem 3rem; mi
 .connection-result.success { color: #1e6247; }
 .connection-result.error { color: #a12525; }
 progress { inline-size: 100%; max-inline-size: 300px; accent-color: var(--accent); }
-.auth-content { max-inline-size: 650px; }
-.auth-content nav { display: flex; flex-wrap: wrap; gap: 1rem; margin-block: 1.5rem; }
-.auth-content a { display: inline-flex; align-items: center; min-block-size: 44px; }
 .app-footer { border-block-start: 1px solid var(--line); color: var(--muted); font-size: 0.85rem; padding: 1.2rem; text-align: center; }
 .skip-link { position: fixed; inset-block-start: 0.7rem; inset-inline-start: 0.7rem; padding: 0.7rem 1rem; background: #fff; border: 2px solid var(--accent); z-index: 2; }
 .skip-link:not(:focus) { clip-path: inset(50%); overflow: hidden; inline-size: 1px; block-size: 1px; padding: 0; border: 0; white-space: nowrap; }
@@ -65,8 +69,6 @@ button, .button { min-block-size: 48px; }
 .field [aria-invalid="true"] { border-color: #a12525; }
 .field span, .error { color: #922121; }
 .error p { margin-block-end: 0; }
-.auth-content form { max-inline-size: 480px; margin-block: 1.5rem; }
-.password-toggle { display: block; margin-block: -0.3rem 1.2rem; }
 .editor { max-inline-size: 650px; padding: 1.25rem; background: #fff; border: 1px solid var(--line); border-radius: 6px; margin-block: 1.5rem; }
 .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .danger { color: #922121; border-color: #922121; }
