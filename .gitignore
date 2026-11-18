@@ -1,0 +1,71 @@
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.env
+*.env.local
+.envrc
+.direnv/
+secrets/
+.secrets/
+credentials/
+.private/
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.crt
+*.cer
+application.properties
+application-*.properties
+application.yml
+application-*.yml
+application.yaml
+application-*.yaml
+!application.properties.example
+!application.yml.example
+!application.yaml.example
+settings.xml
+
+# Frontend dependencies and builds
+node_modules/
+dist/
+.vite/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+
+# Java builds and local tooling
+target/
+*.class
+*.jar
+*.war
+*.ear
+!.mvn/wrapper/maven-wrapper.jar
+.tools/
+
+# Database dumps and runtime files
+*.dump
+*.backup
+*.db
+*.sqlite
+*.sqlite3
+*.log
+logs/
+*.pid
+
+# IDE and operating system
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+*~
+
+# Keep dependency lockfiles and reviewed SQL migrations tracked.
+# Never put secrets into example files or migration SQL.
+# .gitignore is not a secret scanner and does not protect already tracked files.
