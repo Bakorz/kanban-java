@@ -33,11 +33,13 @@ keyboard-usable controls, and no decorative animation or branding exercise.
 The frontend is not yet a working authenticated Kanban application. A health success
 checks Java liveness only, never database or authentication readiness.
 
-## Supabase configuration received (not verified remotely)
+## Supabase development configuration
 
 - Development project reference: `cfvutnxoayzewyqbooml`.
 - Browser publishable key supplied by owner; not copied into tracked example files.
-- Signing-key type reported: ECC P-256 (ES256).
+- Signing-key type: ECC P-256 (ES256). Public JWKS endpoint returned HTTP 200
+  with ES256/P-256 verification keys after development access was authorized.
+  This verifies key availability, not sign-in or database connectivity.
 - Email confirmation: owner reports OFF for disposable development only.
 - Owner authorizes Auth testing with disposable accounts and synthetic boards/cards
   in this development project after owner-run migrations/private runtime setup.

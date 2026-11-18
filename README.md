@@ -11,6 +11,7 @@ A personal Kanban application planned for a university Java web project.
 - [Product requirements and architecture](<docs/PRD.md>) — MVP scope, flowcharts, ERD, API contract, and acceptance criteria.
 - [Implementation backlog](<docs/TASKS.md>) — 37 core tasks and 3 optional enhancements with dependencies and completion checks.
 - [Setup and credential handling](<docs/SETUP.md>) — public configuration, private environment settings, and access gates.
+- [Local course demo guide](<docs/LOCAL-DEMO.md>) — owner-approved localhost setup, SQL steps, private launcher, and remaining acceptance checks.
 - [Contribution and Git workflow](<CONTRIBUTING.md>) — branching, commits, and secret safety.
 
 ## Architecture
