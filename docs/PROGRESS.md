@@ -40,7 +40,10 @@ checks Java liveness only, never database or authentication readiness.
 - Signing-key type: ECC P-256 (ES256). Public JWKS endpoint returned HTTP 200
   with ES256/P-256 verification keys after development access was authorized.
   This verifies key availability, not sign-in or database connectivity.
-- Email confirmation: owner reports OFF for disposable development only.
+- Email confirmation: owner selected OFF for disposable development only.
+  A public Auth settings check subsequently reported `mailer_autoconfirm: false`;
+  the owner was asked to save the setting again. No live accounts were created.
+  Email/password provider and public signup are enabled.
 - Owner authorizes Auth testing with disposable accounts and synthetic boards/cards
   in this development project after owner-run migrations/private runtime setup.
 - Demo target: owner's computer; localhost frontend/auth callback URLs, not a public host.
