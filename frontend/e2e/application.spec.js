@@ -47,7 +47,7 @@ test('SDK login board/card CRUD keyboard moves null clearing and logout', async 
     return route.fulfill({ status: 500, json: { error: { message: 'Unhandled test fixture request' } } });
   });
   await login(page);
-  await expect(page.getByText('No boards yet.', { exact: false })).toBeVisible();
+  await expect(page.getByText('No boards yet', { exact: false })).toBeVisible();
   await page.getByRole('button', { name: 'New board' }).click();
   await page.getByLabel('Board name (required)').fill('Personal work');
   await page.getByLabel(/Description \(optional/).fill('A practical weekly board');
@@ -62,14 +62,15 @@ test('SDK login board/card CRUD keyboard moves null clearing and logout', async 
     await page.getByRole('button', { name: 'Create card', exact: true }).click();
     await expect(page.getByRole('heading', { name: title })).toBeVisible();
   }
+  await page.getByRole('button', { name: 'Edit card Review the result' }).click();
   await page.getByRole('button', { name: 'Move Review the result up' }).focus();
   await expect(page.getByRole('button', { name: 'Move Review the result up' })).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('status')).toHaveText('Card moved.');
   expect(mutations).toContainEqual({ path: '/api/cards/card2/move', method: 'POST', body: { targetColumnId: 'col0', newPosition: 0 } });
-  const card = page.getByRole('article').filter({ has: page.getByRole('heading', { name: 'Write a useful task' }) });
-  await card.getByLabel('Move to column').selectOption('col1');
-  await card.getByRole('button', { name: 'Move Write a useful task to selected column' }).focus();
+  await page.getByRole('button', { name: 'Edit card Write a useful task' }).click();
+  await page.getByLabel('Move to column').selectOption('col1');
+  await page.getByRole('button', { name: 'Move Write a useful task to selected column' }).focus();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('status')).toHaveText('Card moved.');
   await page.getByRole('button', { name: 'Edit card Write a useful task' }).click();
@@ -79,6 +80,7 @@ test('SDK login board/card CRUD keyboard moves null clearing and logout', async 
   expect(mutations).toContainEqual({ path: '/api/cards/card1', method: 'PUT', body: { title: 'Write a useful task', description: null, priority: 'MEDIUM', dueDate: null } });
   await expect(page.locator('body')).toHaveJSProperty('scrollWidth', await page.locator('body').evaluate((el) => el.clientWidth));
   await page.screenshot({ path: `.tools/screenshots/workspace-${testInfo.project.name}.png`, fullPage: true });
+  await page.getByRole('button', { name: 'Edit card Review the result' }).click();
   await page.getByRole('button', { name: 'Delete card Review the result' }).click();
   await expect(page.getByRole('button', { name: 'Cancel deletion' })).toBeFocused();
   await page.getByRole('button', { name: 'Confirm delete' }).click();
@@ -90,9 +92,9 @@ test('SDK login board/card CRUD keyboard moves null clearing and logout', async 
   await page.getByRole('button', { name: 'Delete board', exact: true }).click();
   await page.getByRole('button', { name: 'Confirm delete' }).click();
   await expect(page.getByRole('heading', { name: 'My boards', level: 1 })).toBeVisible();
-  await expect(page.getByText('No boards yet.', { exact: false })).toBeVisible();
+  await expect(page.getByText('No boards yet', { exact: false })).toBeVisible();
   await page.getByRole('button', { name: 'Log out', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Log in', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Log in to Kanban', level: 1 })).toBeVisible();
 });
 
 test('SDK PKCE recovery callback emits recovery permission and updates password', async ({ page }) => {
@@ -104,7 +106,7 @@ test('SDK PKCE recovery callback emits recovery permission and updates password'
   await page.goto('/forgot-password');
   await page.getByLabel('Email (required)').fill(user.email);
   await page.getByRole('button', { name: 'Send recovery link' }).click();
-  await expect(page.getByRole('status')).toContainText('If an account exists');
+  await expect(page.getByRole('status').filter({ hasText: 'If an account exists' })).toBeVisible();
   // The real SDK generated and persisted its PKCE verifier during /recover.
   // Only the provider's code exchange response is mocked; no storage injection.
   await page.goto('/reset-password?code=fixture-recovery-code');
@@ -112,7 +114,7 @@ test('SDK PKCE recovery callback emits recovery permission and updates password'
   expect(exchanges).toBe(1);
   await page.getByLabel('New password (required)').fill('recovered-password');
   await page.getByRole('button', { name: 'Update password' }).click();
-  await expect(page.getByRole('status')).toContainText('password has been updated');
+  await expect(page.getByRole('status').filter({ hasText: 'password has been updated' })).toBeVisible();
   expect(updates).toBe(1);
 });
 
@@ -121,7 +123,7 @@ test('confirmation-required signup and non-recovery session cannot update passwo
   await authRoutes(page, true);
   await page.goto('/register');
   await page.getByLabel('Email (required)').fill(user.email); await page.getByLabel('Password (required)').fill('fixture-password'); await page.getByRole('button', { name: 'Create account', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('Check your email');
+  await expect(page.getByRole('status').filter({ hasText: 'Check your email' })).toBeVisible();
   await page.goto('/reset-password');
   await expect(page.getByText(/normal signed-in session cannot/)).toBeVisible(); await expect(page.getByLabel('New password (required)')).toHaveCount(0);
 });

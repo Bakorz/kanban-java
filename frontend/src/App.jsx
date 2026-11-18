@@ -4,6 +4,7 @@ import { checkHealth } from './health.js';
 import { AuthProvider, useAuth } from './Auth.jsx';
 import { AuthPage } from './AuthPages.jsx';
 import { Board, Dashboard } from './Boards.jsx';
+import { Landing } from './Landing.jsx';
 import { ErrorMessage, Page, useOperation } from './ui.jsx';
 
 export function HealthCheck() {
@@ -44,16 +45,12 @@ export function HealthCheck() {
 }
 
 
-function Preview() {
-  return <Page title="Board preview"><p className="intro">Keep your work moving, one task at a time.</p>
-    <p className="notice">Public layout preview only. No board has been created, no cards are saved, and this is not a signed-in workspace.</p>
-    <p><Link className="button primary" to="/login">Log in to manage your boards</Link></p>
-    <section className="board-section"><h2>Three stages, a clear next step</h2><div className="columns">{[
-      ['To Do', 'Tasks waiting to be started.'], ['In Progress', 'The work you are focusing on.'], ['Done', 'Completed work stays here.'],
-    ].map(([name, description]) => <section className="column" key={name}><h3>{name}</h3><p>{description}</p><p className="column-empty">No cards in this preview.</p></section>)}</div></section>
-    <HealthCheck />
-  </Page>;
+const AUTH_ROUTES = new Set(['/login', '/register', '/forgot-password', '/reset-password', '/auth/reset-password', '/auth/callback']);
+
+function BrandMark() {
+  return <span className="brand__mark" aria-hidden="true"><i /><i /><i /></span>;
 }
+
 function Protected({ children }) {
   const auth = useAuth();
   const location = useLocation();
@@ -66,17 +63,19 @@ function Protected({ children }) {
 function Shell() {
   const auth = useAuth();
   const op = useOperation();
+  const { pathname } = useLocation();
+  const onAuth = AUTH_ROUTES.has(pathname);
   return <>
+    <style>{'main h1[tabindex="-1"]:focus{outline:none}body.auth-body main h1[tabindex="-1"]:focus{text-decoration:underline;text-decoration-color:#1d4ed8;text-decoration-thickness:2px;text-underline-offset:8px}'}</style>
     <a className="skip-link" href="#content">Skip to main content</a>
-    <header className="app-header"><Link className="brand" to="/dashboard">Kanban</Link>
-      <nav aria-label="Primary"><NavLink to="/dashboard">My boards</NavLink><NavLink to="/preview">Preview</NavLink>
-        {auth.session ? <button type="button" disabled={op.pending} onClick={() => { void op.run(async () => { const { error } = await auth.client.auth.signOut(); if (error) throw error; }); }}>{op.pending ? 'Logging out…' : 'Log out'}</button> : <NavLink to="/login">Log in</NavLink>}
+    <header className={`app-header${onAuth ? ' app-header--auth' : ''}`}><Link className="brand" to="/"><BrandMark />Kanban</Link>
+      <nav aria-label={onAuth ? 'Account' : 'Primary'}>{onAuth ? <Link className="app-header__back" to="/">Back to home</Link> : <><NavLink to="/" end>Home</NavLink><NavLink to="/dashboard">My boards</NavLink>
+        {auth.session ? <button type="button" disabled={op.pending} onClick={() => { void op.run(async () => { const { error } = await auth.client.auth.signOut(); if (error) throw error; }); }}>{op.pending ? 'Logging out…' : 'Log out'}</button> : <NavLink to="/login">Log in</NavLink>}</>}
       </nav>
     </header>
     <ErrorMessage error={op.error} />
     <Routes>
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="/preview" element={<Preview />} />
+      <Route path="/preview" element={<Navigate to="/" replace />} />
       <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
       <Route path="/boards/:boardId" element={<Protected><Board /></Protected>} />
       <Route path="/login" element={<AuthPage key="login" kind="login" />} />
@@ -87,7 +86,14 @@ function Shell() {
       <Route path="/auth/callback" element={<AuthPage key="callback" kind="callback" />} />
       <Route path="*" element={<Page title="Page not found"><p>This page does not exist.</p><Link to="/dashboard">Return to my boards</Link></Page>} />
     </Routes>
-    <footer className="app-footer">Personal Kanban · Your boards, one task at a time</footer>
+    <footer className={`app-footer${onAuth ? ' app-footer--auth' : ''}`}>Personal Kanban · Your boards, one task at a time</footer>
   </>;
 }
-export function App({ authClient }) { return <AuthProvider {...(authClient !== undefined ? { client: authClient } : {})}><Shell /></AuthProvider>; }
+export function App({ authClient }) {
+  return <AuthProvider {...(authClient !== undefined ? { client: authClient } : {})}>
+    <Routes>
+      <Route path="/" element={<Landing />} />
+      <Route path="*" element={<Shell />} />
+    </Routes>
+  </AuthProvider>;
+}

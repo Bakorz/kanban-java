@@ -13,7 +13,7 @@ From this directory:
 npm ci
 npm run dev
 # Separate shell; see backend/README.md for starting Java on 127.0.0.1:8080.
-# Visit http://127.0.0.1:5173/preview and click Check connection.
+# Visit http://127.0.0.1:5173/ for the public landing page.
 npm test
 npm run build
 ```
@@ -33,7 +33,7 @@ to the frontend document. No production deployment is configured here.
 Configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in an ignored
 local environment file, then restart Vite. Use a public/publishable key, never a
 service-role key. Without both settings the application makes no Auth calls and
-displays setup instructions; `/preview` remains public. No live project URL/key
+displays setup instructions; `/` remains public. No live project URL/key
 is tracked, and all `VITE_*` values are visible in client bundles.
 
 Supabase SDK owns PKCE callback exchange, session persistence, refresh and logout.
@@ -46,16 +46,25 @@ recovery URL, request a fresh recovery link. Configure the provider's allowed
 redirect URLs for `/auth/callback` and `/reset-password` on the application's
 actual origin. Do not log callback parameters or tokens.
 
-`/dashboard` and `/boards/:boardId` require a session. Boards can be created,
-opened, renamed and deleted (with a cascade warning). Cards support title,
-optional description, LOW/MEDIUM/HIGH priority, date-only due date, editing,
-deleting and keyboard-usable column/up/down movement. Blank descriptions/dates
-are sent as null; dates are never converted to timestamps. Successful mutations
-close their editor/confirmation immediately and reload canonical API state; if that
-reload fails, the UI says the change was saved and offers a reload-only retry, so a
-committed create cannot be replayed as a duplicate. Native forms supply labels,
-autocomplete, length constraints, pending locks and structured server field errors.
-Mobile columns stack vertically rather than requiring horizontal page scrolling.
+`/dashboard` and `/boards/:boardId` require a session. The dashboard is a
+searchable card grid: each card renders a miniature of the board's real columns
+and cards, with each task strip coloured by its column status, and the round
+`+` opens a focused create dialog. Search matches board names and descriptions.
+The board page keeps its header to an `All boards` link, the board title and
+description, and two icon actions for editing and deleting the board. Columns
+sit side by side with a status dot, count and a `+` add-card control; each card
+keeps only its title, a clamped description and compact priority/due metadata.
+Clicking a card opens one focused editor for its title, optional description,
+LOW/MEDIUM/HIGH priority, date-only due date, column/up/down movement and
+deletion. Board and card actions use the same modal with a focus trap,
+Escape/backdrop closing, scroll lock and focus restoration. Blank
+descriptions/dates are sent as null; dates are never converted to timestamps.
+Successful mutations close their editor/confirmation immediately and reload
+canonical API state; if that reload fails, the UI says the change was saved and
+offers a reload-only retry, so a committed create cannot be replayed as a
+duplicate. Native forms supply labels, autocomplete, length constraints, pending
+locks and structured server field errors. Columns stack below 720px rather than
+requiring horizontal page scrolling.
 
 Private requests go only to same-origin `/api`, use SDK bearer tokens, omit
 cookies, reject redirects, disable caches and have finite timeouts. GET after a
@@ -66,16 +75,20 @@ or signing out the newly active account. Java must independently enforce JWT
 verification and ownership; route guards are not an authorization boundary.
 No drag-and-drop, sharing or production deployment is included.
 
-The health button checks **liveness only**: JSON `status: ok` and
-`service: kanban-api`. It neither authenticates nor checks the database.
-Requests are bounded to five seconds, omit credentials, and do not follow
-redirects. No public health request is made automatically.
+The Java health endpoint at `/api/health` checks **liveness only**: JSON
+`status: ok` and `service: kanban-api`. It neither authenticates nor checks the
+database. Requests are bounded to five seconds, omit credentials, and do not
+follow redirects. The public landing page does not call it automatically.
 
-Routes: `/preview` (public layout and health only), `/dashboard`, `/boards/:boardId`, `/login`,
-`/register`, `/forgot-password`, `/reset-password`, `/auth/reset-password`
-(alias), `/auth/callback`, and a not-found screen. `/` redirects to `/dashboard`.
-Each route updates the document title and focuses its first heading. The skip
-link targets that heading, not a large interactive container.
+Routes: `/` (public landing page), `/preview` (redirects to `/`), `/dashboard`,
+`/boards/:boardId`, `/login`, `/register`, `/forgot-password`, `/reset-password`,
+`/auth/reset-password` (alias), `/auth/callback`, and a not-found screen.
+Sign-in, registration and recovery share one centred card on a pale blue field;
+Google sign-in is a visible, disabled placeholder until an OAuth provider is
+configured. Workspace routes update the document title and focus their first
+heading. The landing page sets its own title and keeps the skip link as the
+first stop. The skip link targets the main content, not a large interactive
+container.
 
 The repository environment example contains placeholders only. Never commit a
 real project configuration or credentials.
