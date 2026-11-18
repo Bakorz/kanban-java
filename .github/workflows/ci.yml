@@ -7,6 +7,14 @@ on:
 permissions:
   contents: read
 jobs:
+  schema:
+    name: Verify isolated database schema
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check schema and restricted role without live credentials
+        run: python3 database/verify-local.py
   foundation:
     name: Build and verify foundation
     runs-on: ubuntu-latest

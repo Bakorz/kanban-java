@@ -21,11 +21,14 @@ keyboard-usable controls, and no decorative animation or branding exercise.
   Local verification: 34 frontend tests, 7 backend tests, frontend production build,
   6 mock-network browser checks, and 4 real-Java browser checks passed (2 mock-only
   error cases intentionally skipped in real-Java mode). Desktop/mobile screenshots
-  inspected. CI remote result remains pending until the pull request runs.
+  inspected. PR #5 application CI and branch-flow checks passed for foundation
+  commit `39d283d`, including JDK 21 execution. Later changes need their own CI run.
 - Shipped frontend dependency audit: zero findings. Full tooling audit has six
   high development-only flags from upstream picomatch; no registry patch was
   available at verification time. See frontend README; do not describe this as a clean full audit.
-- T11: reviewed SQL draft being prepared separately; not applied to Supabase.
+- T11: schema and restricted-runtime-role SQL drafts written; isolated PostgreSQL
+  verification passed, including constraints, nullable clearing, role grants,
+  browser denial, deferred reorder, rollback, and cascades. Not applied to Supabase.
 
 The frontend is not yet a working authenticated Kanban application. A health success
 checks Java liveness only, never database or authentication readiness.
@@ -35,19 +38,22 @@ checks Java liveness only, never database or authentication readiness.
 - Development project reference: `cfvutnxoayzewyqbooml`.
 - Browser publishable key supplied by owner; not copied into tracked example files.
 - Signing-key type reported: ECC P-256 (ES256).
-- Email confirmation: owner selecting setting; guidance provided.
-- No authenticated/live project access, role creation, migrations, or synthetic data
-  operations have been authorized or performed in this batch.
+- Email confirmation: owner reports OFF for disposable development only.
+- Owner authorizes Auth testing with disposable accounts and synthetic boards/cards
+  in this development project after owner-run migrations/private runtime setup.
+- Demo target: owner's computer; localhost frontend/auth callback URLs, not a public host.
+- Agent has not executed live migrations, created roles, or performed live test data operations.
+  No migration authority credentials will be placed in the app.
 - Old exposed credentials: owner remediation status unconfirmed; never reused here.
 
 ## Next gates
 
-1. Owner confirms email policy and whether frontend runs locally or on an approved remote target.
-2. Owner explicitly authorizes this development project's allowed Auth/data operations.
-3. Agent writes/reviews SQL; owner executes reviewed SQL through Supabase SQL Editor.
-4. Restricted runtime credentials configured privately, separately from migration authority.
-5. Agent implements token verification, pooled JDBC, real auth screens, and board vertical slice.
-6. Cards/ordering, two-user privacy tests, owner acceptance, then separately approved deployment/release.
+1. Owner reviews and executes the SQL through the development Supabase SQL Editor.
+2. Restricted runtime credentials configured privately, separately from migration authority.
+3. Agent finishes/reviews token verification, pooled JDBC, Servlet CRUD, real auth screens,
+   and board/card UI; current implementation is work in progress until tested.
+4. Run local fixture-key/PostgreSQL tests, then authorized real-project Auth/data checks.
+5. Owner runs the local course demo and accepts the release; main promotion remains separate.
 
 All implementation uses work branches → develop; main promotion and deployment
 require separate owner approval. A pull request or passing health check is not a release.
