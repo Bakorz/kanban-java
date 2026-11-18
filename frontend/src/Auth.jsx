@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { authClient } from './supabase.js';
 
 const AuthContext = createContext(null);
-export const configurationNotice = 'Authentication is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in your local frontend environment, then restart the dev server. Do not use a service-role key. You can still open the public preview.';
+export const configurationNotice = 'Authentication is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in your local frontend environment, then restart the dev server. Do not use a service-role key. You can still open the home page.';
 
 export function safeRedirect(value, fallback = '/dashboard') {
   if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//') || /[\\\u0000-\u0020]/.test(value)) return fallback;

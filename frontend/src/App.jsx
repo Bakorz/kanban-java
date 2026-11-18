@@ -4,6 +4,7 @@ import { checkHealth } from './health.js';
 import { AuthProvider, useAuth } from './Auth.jsx';
 import { AuthPage } from './AuthPages.jsx';
 import { Board, Dashboard } from './Boards.jsx';
+import { Landing } from './Landing.jsx';
 import { ErrorMessage, Page, useOperation } from './ui.jsx';
 
 export function HealthCheck() {
@@ -44,16 +45,6 @@ export function HealthCheck() {
 }
 
 
-function Preview() {
-  return <Page title="Board preview"><p className="intro">Keep your work moving, one task at a time.</p>
-    <p className="notice">Public layout preview only. No board has been created, no cards are saved, and this is not a signed-in workspace.</p>
-    <p><Link className="button primary" to="/login">Log in to manage your boards</Link></p>
-    <section className="board-section"><h2>Three stages, a clear next step</h2><div className="columns">{[
-      ['To Do', 'Tasks waiting to be started.'], ['In Progress', 'The work you are focusing on.'], ['Done', 'Completed work stays here.'],
-    ].map(([name, description]) => <section className="column" key={name}><h3>{name}</h3><p>{description}</p><p className="column-empty">No cards in this preview.</p></section>)}</div></section>
-    <HealthCheck />
-  </Page>;
-}
 function Protected({ children }) {
   const auth = useAuth();
   const location = useLocation();
@@ -68,15 +59,14 @@ function Shell() {
   const op = useOperation();
   return <>
     <a className="skip-link" href="#content">Skip to main content</a>
-    <header className="app-header"><Link className="brand" to="/dashboard">Kanban</Link>
-      <nav aria-label="Primary"><NavLink to="/dashboard">My boards</NavLink><NavLink to="/preview">Preview</NavLink>
+    <header className="app-header"><Link className="brand" to="/">Kanban</Link>
+      <nav aria-label="Primary"><NavLink to="/" end>Home</NavLink><NavLink to="/dashboard">My boards</NavLink>
         {auth.session ? <button type="button" disabled={op.pending} onClick={() => { void op.run(async () => { const { error } = await auth.client.auth.signOut(); if (error) throw error; }); }}>{op.pending ? 'Logging out…' : 'Log out'}</button> : <NavLink to="/login">Log in</NavLink>}
       </nav>
     </header>
     <ErrorMessage error={op.error} />
     <Routes>
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="/preview" element={<Preview />} />
+      <Route path="/preview" element={<Navigate to="/" replace />} />
       <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
       <Route path="/boards/:boardId" element={<Protected><Board /></Protected>} />
       <Route path="/login" element={<AuthPage key="login" kind="login" />} />
@@ -90,4 +80,11 @@ function Shell() {
     <footer className="app-footer">Personal Kanban · Your boards, one task at a time</footer>
   </>;
 }
-export function App({ authClient }) { return <AuthProvider {...(authClient !== undefined ? { client: authClient } : {})}><Shell /></AuthProvider>; }
+export function App({ authClient }) {
+  return <AuthProvider {...(authClient !== undefined ? { client: authClient } : {})}>
+    <Routes>
+      <Route path="/" element={<Landing />} />
+      <Route path="*" element={<Shell />} />
+    </Routes>
+  </AuthProvider>;
+}

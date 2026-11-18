@@ -13,7 +13,7 @@ From this directory:
 npm ci
 npm run dev
 # Separate shell; see backend/README.md for starting Java on 127.0.0.1:8080.
-# Visit http://127.0.0.1:5173/preview and click Check connection.
+# Visit http://127.0.0.1:5173/ for the public landing page.
 npm test
 npm run build
 ```
@@ -33,7 +33,7 @@ to the frontend document. No production deployment is configured here.
 Configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in an ignored
 local environment file, then restart Vite. Use a public/publishable key, never a
 service-role key. Without both settings the application makes no Auth calls and
-displays setup instructions; `/preview` remains public. No live project URL/key
+displays setup instructions; `/` remains public. No live project URL/key
 is tracked, and all `VITE_*` values are visible in client bundles.
 
 Supabase SDK owns PKCE callback exchange, session persistence, refresh and logout.
@@ -66,16 +66,17 @@ or signing out the newly active account. Java must independently enforce JWT
 verification and ownership; route guards are not an authorization boundary.
 No drag-and-drop, sharing or production deployment is included.
 
-The health button checks **liveness only**: JSON `status: ok` and
-`service: kanban-api`. It neither authenticates nor checks the database.
-Requests are bounded to five seconds, omit credentials, and do not follow
-redirects. No public health request is made automatically.
+The Java health endpoint at `/api/health` checks **liveness only**: JSON
+`status: ok` and `service: kanban-api`. It neither authenticates nor checks the
+database. Requests are bounded to five seconds, omit credentials, and do not
+follow redirects. The public landing page does not call it automatically.
 
-Routes: `/preview` (public layout and health only), `/dashboard`, `/boards/:boardId`, `/login`,
-`/register`, `/forgot-password`, `/reset-password`, `/auth/reset-password`
-(alias), `/auth/callback`, and a not-found screen. `/` redirects to `/dashboard`.
-Each route updates the document title and focuses its first heading. The skip
-link targets that heading, not a large interactive container.
+Routes: `/` (public landing page), `/preview` (redirects to `/`), `/dashboard`,
+`/boards/:boardId`, `/login`, `/register`, `/forgot-password`, `/reset-password`,
+`/auth/reset-password` (alias), `/auth/callback`, and a not-found screen.
+Workspace routes update the document title and focus their first heading. The
+landing page sets its own title and keeps the skip link as the first stop. The
+skip link targets the main content, not a large interactive container.
 
 The repository environment example contains placeholders only. Never commit a
 real project configuration or credentials.

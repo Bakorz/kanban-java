@@ -2,18 +2,14 @@ import { expect, test } from '@playwright/test';
 
 const realApi = process.env.KANBAN_E2E_REAL_API === '1';
 
-test('public preview health route focus and responsive columns', async ({ page }, testInfo) => {
-  if (!realApi) await page.route('**/api/health', (route) => route.fulfill({ json: { status: 'ok', service: 'kanban-api' } }));
-  await page.goto('/preview');
-  await expect(page).toHaveTitle('Board preview | Kanban');
-  await expect(page.getByRole('heading', { level: 1, name: 'Board preview' })).toBeFocused();
-  await expect(page.getByText(/not a signed-in workspace/)).toBeVisible();
-  for (const name of ['To Do', 'In Progress', 'Done']) await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Check connection' }).click();
-  await expect(page.getByRole('status')).toContainText('Java API is reachable');
-  await expect(page.getByRole('status')).toContainText('database connectivity are not checked');
+test('landing page is public and free of the old preview link', async ({ page }) => {
+  await page.goto('/');
+  await expect(page).toHaveTitle('Kanban: a personal board for your tasks');
+  await expect(page.getByRole('heading', { level: 1, name: 'Personal Kanban for your tasks' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Preview' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Create an account' }).first()).toBeVisible();
+  await expect(page.getByRole('img', { name: 'The Kanban board with To Do, In Progress and Done columns.' })).toBeVisible();
   await expect(page.locator('body')).toHaveJSProperty('scrollWidth', await page.locator('body').evaluate((el) => el.clientWidth));
-  await page.screenshot({ path: `.tools/screenshots/preview-${testInfo.project.name}.png`, fullPage: true });
 });
 
 test('keyboard skip link and protected routes work without a session', async ({ page }) => {
@@ -32,15 +28,4 @@ test('keyboard skip link and protected routes work without a session', async ({ 
     await expect(page.getByLabel('Email (required)')).toBeFocused();
     await expect(page.getByLabel('Email (required)')).toHaveCSS('outline-style', 'solid');
   }
-});
-
-test('health errors remain recoverable without treating HTML as success', async ({ page }) => {
-  test.skip(realApi, 'Mock-only error-path test.');
-  let calls = 0;
-  await page.route('**/api/health', (route) => ++calls === 1 ? route.fulfill({ contentType: 'text/html', body: '<html>Proxy error</html>' }) : route.fulfill({ json: { status: 'ok', service: 'kanban-api' } }));
-  await page.goto('/preview');
-  await page.getByRole('button', { name: 'Check connection' }).click();
-  await expect(page.getByRole('status')).toContainText('did not return JSON');
-  await page.getByRole('button', { name: 'Check connection' }).click();
-  await expect(page.getByRole('status')).toContainText('Java API is reachable');
 });

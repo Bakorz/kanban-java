@@ -10,11 +10,12 @@ function route(path, client = null) { return render(<MemoryRouter initialEntries
 function fillAuth() { fireEvent.change(screen.getByLabelText('Email (required)'), { target: { value: 'person@example.test' } }); fireEvent.change(screen.getByLabelText('Password (required)'), { target: { value: 'long-password' } }); }
 
 describe('auth lifecycle and routes', () => {
-  it('preserves public preview, health and three columns without credentials', () => {
-    route('/preview');
-    expect(screen.getByRole('heading', { name: 'Board preview', level: 1 })).toHaveFocus();
-    for (const name of ['To Do', 'In Progress', 'Done']) expect(screen.getByRole('heading', { name })).toBeInTheDocument();
-    expect(screen.getByText(/not a signed-in workspace/)).toBeInTheDocument();
+  it('serves the landing page without a Preview link in its navigation', () => {
+    route('/');
+    expect(screen.getByRole('heading', { name: 'Personal Kanban for your tasks', level: 1 })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Preview' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /Create an account/ }).length).toBeGreaterThan(0);
+    for (const name of ['To Do', 'In Progress', 'Done']) expect(screen.getAllByText(name).length).toBeGreaterThan(0);
   });
   it.each(['/dashboard', '/boards/private'])('guards %s and gives actionable missing config', async (path) => {
     vi.stubGlobal('fetch', vi.fn()); route(path);

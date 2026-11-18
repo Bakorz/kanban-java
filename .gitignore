@@ -47,6 +47,7 @@ target/
 *.ear
 !.mvn/wrapper/maven-wrapper.jar
 .tools/
+.taste-skill/
 
 # Database dumps and runtime files
 *.dump

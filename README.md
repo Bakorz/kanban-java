@@ -66,7 +66,7 @@ mvn -f backend/pom.xml -Pdev package exec:exec
 npm run dev --prefix frontend
 ```
 
-Open <http://localhost:5173/preview> on the machine running these commands.
+Open <http://localhost:5173/> on the machine running these commands. The public landing page is at `/`; `/preview` redirects to it.
 Click **Check connection** to call the real Java health endpoint through Vite's
 `/api` proxy. The dashboard/board routes require a real Supabase SDK session;
 follow the local demo guide to configure Auth and the restricted runtime database. Both servers bind loopback only; stop them with Ctrl+C.

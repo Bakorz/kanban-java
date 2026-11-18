@@ -68,7 +68,7 @@ export function AuthPage({ kind }) {
       {kind === 'login' && <Link to="/register">Create an account</Link>}
       {(kind === 'login' || kind === 'reset') && <Link to="/forgot-password">{kind === 'reset' ? 'Request a new recovery link' : 'Forgot password?'}</Link>}
       {message && auth.session && <Link to="/dashboard">Return to my boards</Link>}
-      <Link to="/preview">Public preview</Link>
+      <Link to="/">Home</Link>
     </nav>
   </div></Page>;
 }

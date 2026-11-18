@@ -1,0 +1,12 @@
+:root {
+  --p-bg: #ffffff; --p-surface: #f1f2f4; --p-ink: #0b1b33; --p-muted: #5d6a7b;
+  --p-accent: #1d4ed8; --p-accent-ink: #ffffff; --p-action: #1d4ed8; --p-action-ink: #ffffff;
+  --p-inv-bg: #0b1b33; --p-inv-surface: #192840; --p-inv-ink: #ffffff; --p-inv-muted: #98a0ac;
+  --p-inv-accent: #ffffff; --p-inv-accent-ink: #0b1b33; --p-inv-action: #ffffff; --p-inv-action-ink: #0b1b33;
+  --font-display: "Familjen Grotesk", system-ui, sans-serif;
+  --font-text: "Familjen Grotesk", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --display-weight: 400;
+  --display-tracking: -0.03em;
+  --display-tracking-xl: -0.04em;
+}
