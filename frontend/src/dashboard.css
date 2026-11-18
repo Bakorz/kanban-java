@@ -400,76 +400,6 @@
   font-size: 0.95rem;
 }
 
-/* ---------------------------------------------------------------- dialog */
-.dash-overlay {
-  position: fixed;
-  z-index: 20;
-  inset: 0;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  overflow-y: auto;
-  padding: clamp(1rem, 6vh, 4rem) 1rem;
-  background: rgb(11 27 51 / 0.42);
-  backdrop-filter: blur(3px);
-  animation: dash-overlay-in 170ms ease-out both;
-}
-
-.dash-dialog {
-  inline-size: min(100%, 32rem);
-  max-block-size: calc(100svh - 2rem);
-  margin-block: auto;
-  overflow-y: auto;
-  padding: clamp(1.4rem, 4vw, 2rem);
-  border: 1px solid #d9e4f2;
-  border-radius: 18px;
-  background: #fff;
-  box-shadow: 0 36px 80px -40px rgb(11 27 51 / 0.65);
-  animation: dash-dialog-in 220ms cubic-bezier(0.2, 0.75, 0.2, 1) both;
-}
-
-.dash-dialog .editor {
-  max-inline-size: none;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-}
-
-.dash-dialog .editor h2 {
-  margin-block-end: 1.25rem;
-  font-size: 1.5rem;
-  font-weight: 650;
-  letter-spacing: -0.025em;
-  line-height: 1.2;
-}
-
-.dash-dialog .editor h2[tabindex="-1"]:focus {
-  outline: none;
-  text-decoration: underline;
-  text-decoration-color: var(--accent);
-  text-decoration-thickness: 2px;
-  text-underline-offset: 6px;
-}
-
-.dash-dialog .field { gap: 0.38rem; margin-block-end: 1.05rem; }
-.dash-dialog .field label { color: #34475f; font-size: 0.9rem; }
-.dash-dialog input,
-.dash-dialog textarea {
-  border: 1px solid #cddbea;
-  border-radius: 9px;
-  background: #fff;
-}
-.dash-dialog input { min-block-size: 50px; }
-.dash-dialog textarea { min-block-size: 112px; }
-.dash-dialog input:focus-visible,
-.dash-dialog textarea:focus-visible { border-color: var(--accent); outline: 3px solid var(--accent); outline-offset: 1px; }
-.dash-dialog .actions { gap: 0.6rem; margin-block-start: 1.3rem; }
-.dash-dialog .actions .primary { min-inline-size: 8.5rem; }
-
-@keyframes dash-overlay-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes dash-dialog-in { from { opacity: 0; transform: translateY(10px) scale(0.985); } to { opacity: 1; transform: none; } }
-
 /* ---------------------------------------------------------------- widths */
 @media (max-width: 980px) {
   .board-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -493,9 +423,7 @@
 @media (prefers-reduced-motion: reduce) {
   .board-card,
   .dash-search__submit,
-  .dash-create,
-  .dash-overlay,
-  .dash-dialog { animation: none; transition: none; }
+  .dash-create { transition: none; }
   .board-card:hover,
   .dash-create:hover,
   .dash-search__submit:active,

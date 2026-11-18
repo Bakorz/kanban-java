@@ -44,6 +44,7 @@ test('real Java and PostgreSQL board/card lifecycle through browser', async ({ p
   await expect(page.getByRole('heading', { name: 'Persisted task', exact: true })).toBeVisible();
   await expect(page.getByText('Saved by Java to PostgreSQL', { exact: true })).toHaveCount(0);
   await expect(page.locator('time')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Edit card Persisted task' }).click();
   await page.getByLabel('Move to column').selectOption({ label: 'In Progress' });
   await page.getByRole('button', { name: 'Move Persisted task to selected column' }).focus();
   await page.keyboard.press('Enter');
@@ -53,6 +54,7 @@ test('real Java and PostgreSQL board/card lifecycle through browser', async ({ p
   await expect(inProgress.getByRole('heading', { name: 'Persisted task', exact: true })).toBeVisible();
   await expect(page.locator('body')).toHaveJSProperty('scrollWidth', await page.locator('body').evaluate((el) => el.clientWidth));
   await page.screenshot({ path: `.tools/screenshots/real-workspace-${testInfo.project.name}.png`, fullPage: true });
+  await page.getByRole('button', { name: 'Edit card Persisted task' }).click();
   await page.getByRole('button', { name: 'Delete card Persisted task' }).click();
   await page.getByRole('button', { name: 'Confirm delete' }).click();
   await expect(page.getByRole('status')).toHaveText('Card deleted.');

@@ -2,7 +2,9 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { createApi } from './api.js';
 import { useAuth } from './Auth.jsx';
-import { ConfirmDelete, ErrorMessage, Field, Page, useOperation } from './ui.jsx';
+import { ErrorMessage, Field, Modal, Page, useOperation } from './ui.jsx';
+
+const RELOAD_WARNING = 'The change was saved, but the latest board could not be loaded. Use Try again to reload; do not repeat the change.';
 
 function useApi() {
   const { client, clear, getScope } = useAuth();
@@ -28,28 +30,22 @@ function useResource(path) {
   useEffect(() => { void load().catch(() => {}); return () => { sequence.current++; }; }, [load]);
   return { api, data, error, loading, load };
 }
-function ResourceState({ resource, children }) {
-  if (resource.loading && !resource.data) return <progress aria-label="Loading workspace" />;
+function ResourceState({ resource, children, loading }) {
+  if (resource.loading && !resource.data) return loading || <progress aria-label="Loading workspace" />;
   if (resource.error) return <><ErrorMessage error={resource.error} /><button type="button" onClick={() => { void resource.load().catch(() => {}); }}>Try again</button></>;
   return children;
 }
 
-function BoardForm({ board, onSave, onCancel, onBusy, formBusy = false, headingId, focusFirstField = false }) {
+function BoardForm({ board, onSave, onCancel, onBusy, formBusy = false, headingId }) {
   const op = useOperation();
   useEffect(() => { onBusy?.(op.pending); return () => onBusy?.(false); }, [op.pending, onBusy]);
   const title = board ? 'Edit board' : 'Create board';
-  const heading = useRef(null);
-  const form = useRef(null);
-  useEffect(() => {
-    if (focusFirstField) form.current?.querySelector('input[name="name"]')?.focus();
-    else heading.current?.focus();
-  }, [focusFirstField]);
-  return <form ref={form} className="editor" method="post" aria-label={title} onSubmit={(event) => {
+  return <form className="editor" method="post" aria-label={title} onSubmit={(event) => {
     event.preventDefault();
     if (formBusy) return;
     const form = new FormData(event.currentTarget);
     void op.run(() => onSave({ name: String(form.get('name')).trim(), description: String(form.get('description')).trim() || null }));
-  }}><h2 id={headingId} ref={heading} tabIndex={-1}>{title}</h2>
+  }}><h2 id={headingId}>{title}</h2>
     <Field label="Board name (required)" name="name" required maxLength={100} pattern=".*\S.*" defaultValue={board?.name || ''} disabled={op.pending || formBusy} error={op.error?.fieldErrors?.name} />
     <Field label="Description (optional, up to 2,000 characters)" name="description" multiline maxLength={2000} defaultValue={board?.description || ''} disabled={op.pending || formBusy} error={op.error?.fieldErrors?.description} />
     <ErrorMessage error={op.error} />
@@ -60,6 +56,21 @@ function BoardForm({ board, onSave, onCancel, onBusy, formBusy = false, headingI
 const EMPTY_BOARDS = [];
 const TONE_ORDER = ['todo', 'progress', 'done'];
 const TONE_LABELS = { todo: 'to do', progress: 'in progress', done: 'done' };
+const PRIORITY_LABELS = { LOW: 'Low', MEDIUM: 'Medium', HIGH: 'High' };
+
+function priorityName(value) {
+  const priority = String(value || '').toUpperCase();
+  return PRIORITY_LABELS[priority] ? priority : 'MEDIUM';
+}
+
+function dueDateLabel(value) {
+  if (!value) return '';
+  const [year, month, day] = String(value).split('-').map(Number);
+  if (!year || !month || !day) return value;
+  const date = new Date(year, month - 1, day);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(date);
+}
 
 function statusTone(name, index) {
   const value = String(name || '').toLowerCase();
@@ -174,7 +185,6 @@ export function Dashboard() {
   const [creating, setCreating] = useState(false);
   const [formBusy, setFormBusy] = useState(false);
   const newBoardButton = useRef(null);
-  const dialog = useRef(null);
   const wasCreating = useRef(false);
   const searchId = useId();
   const filteredBoards = useMemo(() => {
@@ -186,13 +196,6 @@ export function Dashboard() {
   const resultMessage = query ? `${filteredBoards.length} board${filteredBoards.length === 1 ? '' : 's'} found.` : '';
 
   useEffect(() => {
-    if (!creating) return undefined;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = previousOverflow; };
-  }, [creating]);
-
-  useEffect(() => {
     if (wasCreating.current && !creating) newBoardButton.current?.focus();
     wasCreating.current = creating;
   }, [creating]);
@@ -200,22 +203,6 @@ export function Dashboard() {
   function closeCreate() {
     if (formBusy) return;
     setCreating(false);
-  }
-
-  function onDialogKeyDown(event) {
-    if (event.key === 'Escape') { event.preventDefault(); closeCreate(); return; }
-    if (event.key !== 'Tab') return;
-    const candidates = [...(dialog.current?.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])') || [])];
-    if (!candidates.length) return;
-    const active = document.activeElement;
-    if (!candidates.includes(active)) {
-      event.preventDefault();
-      (event.shiftKey ? candidates[candidates.length - 1] : candidates[0]).focus();
-    } else if (!event.shiftKey && active === candidates[candidates.length - 1]) {
-      event.preventDefault(); candidates[0].focus();
-    } else if (event.shiftKey && active === candidates[0]) {
-      event.preventDefault(); candidates[candidates.length - 1].focus();
-    }
   }
 
   return <Page title="My boards" className="dash-main">
@@ -242,87 +229,274 @@ export function Dashboard() {
             : <ul className="board-grid" role="list">{filteredBoards.map((board) => <BoardCard board={board} preview={previews[board.id]} key={board.id} />)}</ul>}
       </ResourceState>
     </div>
-    {creating && <div className="dash-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) closeCreate(); }}>
-      <div className="dash-dialog" role="dialog" aria-modal="true" aria-labelledby="dash-create-board-title" ref={dialog} onKeyDown={onDialogKeyDown}>
-        <BoardForm headingId="dash-create-board-title" focusFirstField onBusy={setFormBusy} onCancel={closeCreate} onSave={async (payload) => {
-          await resource.api('/api/boards', { method: 'POST', body: payload });
-          setCreating(false);
-          setSearchDraft('');
-          setQuery('');
-          await resource.load().catch(() => {}); // The board exists now; retry only the list, never the create.
-        }} />
-      </div>
-    </div>}
+    {creating && <Modal labelledBy="dash-create-board-title" onClose={closeCreate}>
+      <BoardForm headingId="dash-create-board-title" onBusy={setFormBusy} onCancel={closeCreate} onSave={async (payload) => {
+        await resource.api('/api/boards', { method: 'POST', body: payload });
+        setCreating(false);
+        setSearchDraft('');
+        setQuery('');
+        await resource.load().catch(() => {}); // The board exists now; retry only the list, never the create.
+      }} />
+    </Modal>}
   </Page>;
 }
 
-function CardForm({ card, column, onSave, onCancel, onBusy, formBusy = false }) {
-  const op = useOperation();
-  useEffect(() => { onBusy?.(op.pending); return () => onBusy?.(false); }, [op.pending, onBusy]);
-  const priorityId = `priority-${card?.id || column.id}`;
-  const heading = useRef(null);
-  useEffect(() => { heading.current?.focus(); }, []);
-  return <form className="editor" aria-label={card ? `Edit card ${card.title}` : `Add card to ${column.name}`} method="post" onSubmit={(event) => {
-    event.preventDefault(); if (formBusy) return; const form = new FormData(event.currentTarget);
-    const body = { title: String(form.get('title')).trim(), description: String(form.get('description')).trim() || null, priority: String(form.get('priority')), dueDate: String(form.get('dueDate')) || null };
-    void op.run(() => onSave(body));
-  }}><h2 ref={heading} tabIndex={-1}>{card ? 'Edit card' : `Add card to ${column.name}`}</h2>
-    <Field label="Title (required)" name="title" required maxLength={200} pattern=".*\S.*" defaultValue={card?.title || ''} disabled={op.pending || formBusy} error={op.error?.fieldErrors?.title} />
-    <Field label="Description (optional, up to 5,000 characters)" name="description" multiline maxLength={5000} defaultValue={card?.description || ''} disabled={op.pending || formBusy} error={op.error?.fieldErrors?.description} />
-    <div className="field"><label htmlFor={priorityId}>Priority</label><select id={priorityId} name="priority" defaultValue={card?.priority || 'MEDIUM'} disabled={op.pending || formBusy}><option value="LOW">Low</option><option value="MEDIUM">Medium</option><option value="HIGH">High</option></select></div>
-    <Field label="Due date (optional)" name="dueDate" type="date" defaultValue={card?.dueDate || ''} disabled={op.pending || formBusy} error={op.error?.fieldErrors?.dueDate} />
-    <ErrorMessage error={op.error} /><div className="actions"><button className="primary" type="submit" disabled={op.pending || formBusy}>{op.pending ? 'Saving…' : card ? 'Save card' : 'Create card'}</button><button type="button" disabled={op.pending || formBusy} onClick={onCancel}>Cancel</button></div>
-  </form>;
+function PlusIcon() {
+  return <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12" /></svg>;
 }
 
-function Card({ card, column, columns, index, busy, onEdit, onDelete, onMove }) {
-  const [target, setTarget] = useState(column.id);
-  const selectId = `move-${card.id}`;
-  useEffect(() => setTarget(column.id), [column.id]);
-  return <article className="card"><h3>{card.title}</h3>{card.description && <p className="preserve-text">{card.description}</p>}
-    <p className="card-meta">Priority: {card.priority.toLowerCase()}{card.dueDate && <> · Due <time dateTime={card.dueDate}>{card.dueDate}</time></>}</p>
-    <div className="actions"><button type="button" disabled={busy} aria-label={`Edit card ${card.title}`} onClick={onEdit}>Edit</button><button type="button" disabled={busy} aria-label={`Delete card ${card.title}`} onClick={onDelete}>Delete</button></div>
-    <form className="move-form" aria-label={`Move ${card.title}`} onSubmit={(event) => { event.preventDefault(); if (!busy && target !== column.id) onMove(target, columns.find((c) => c.id === target).cards.length); }}>
-      <label htmlFor={selectId}>Move to column</label><select id={selectId} value={target} disabled={busy} onChange={(event) => setTarget(event.target.value)}>{columns.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select><button type="submit" disabled={busy || target === column.id} aria-label={`Move ${card.title} to selected column`}>Move</button>
-    </form>
-    <div className="actions reorder"><button type="button" disabled={busy || index === 0} aria-label={`Move ${card.title} up`} onClick={() => onMove(column.id, index - 1)}>Move up</button><button type="button" disabled={busy || index === column.cards.length - 1} aria-label={`Move ${card.title} down`} onClick={() => onMove(column.id, index + 1)}>Move down</button></div>
+function PencilIcon() {
+  return <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m4 13.8-.7 3 3-.7L16.4 6a1.8 1.8 0 0 0-2.5-2.5L4 13.8Z" /><path d="m12.6 4.9 2.5 2.5" /></svg>;
+}
+
+function TrashIcon() {
+  return <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 5.5h13M8 5.5V3.8h4v1.7M5.5 5.5l.7 10.2h7.6l.7-10.2M8.4 9v3.7M11.6 9v3.7" /></svg>;
+}
+
+function ArrowUpIcon() {
+  return <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 12.5v-9M4.5 7 8 3.5 11.5 7" /></svg>;
+}
+
+function ArrowDownIcon() {
+  return <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3.5v9M4.5 9 8 12.5 11.5 9" /></svg>;
+}
+
+function ArrowRightIcon() {
+  return <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3 5 5-5 5" /></svg>;
+}
+
+function BoardSkeleton() {
+  return <div className="board-columns board-columns--loading" role="status" aria-label="Loading board">
+    {[0, 1, 2].map((column) => <div className="board-column board-column--skeleton" key={column} aria-hidden="true">
+      <div className="board-column__head"><span className="board-skel board-skel--dot" /><span className="board-skel board-skel--title" /><span className="board-skel board-skel--add" /></div>
+      <div className="board-skeleton__cards">{[0, 1, 2].map((card) => <span className={`board-skel board-skel--card${card === 2 ? ' board-skel--short' : ''}`} key={card} />)}</div>
+    </div>)}
+  </div>;
+}
+
+function TaskCard({ card, busy, onOpen }) {
+  const priority = priorityName(card.priority);
+  return <article className="task-card">
+    <button type="button" className="task-card__hit" aria-label={`Edit card ${card.title}`} disabled={busy} onClick={onOpen} />
+    <h3 className="task-card__title">{card.title}</h3>
+    {card.description && <p className="task-card__desc">{card.description}</p>}
+    <p className="task-card__meta">
+      <span className={`task-card__priority task-card__priority--${priority.toLowerCase()}`}>{PRIORITY_LABELS[priority]}</span>
+      {card.dueDate && <time dateTime={card.dueDate}>Due {dueDateLabel(card.dueDate)}</time>}
+      <span className="task-card__chevron"><ArrowRightIcon /></span>
+    </p>
   </article>;
+}
+
+function BoardColumn({ column, index, busy, onAdd, onEdit }) {
+  const cards = Array.isArray(column.cards) ? column.cards : [];
+  const headingId = `column-title-${column.id}`;
+  return <section className={`column board-column board-column--${statusTone(column.name, index)}`} aria-labelledby={headingId}>
+    <header className="board-column__head">
+      <h2 id={headingId}>
+        <span className="board-column__dot" aria-hidden="true" />
+        <span className="board-column__name">{column.name}</span>
+        <span className="board-column__count" aria-label={`${cards.length} card${cards.length === 1 ? '' : 's'}`}>{cards.length}</span>
+      </h2>
+      <button type="button" className="board-column__add" aria-label={`Add card to ${column.name}`} title={`Add card to ${column.name}`} disabled={busy} onClick={onAdd}>
+        <PlusIcon />
+      </button>
+    </header>
+    {cards.length
+      ? <ol className="task-list" role="list">{cards.map((card, cardIndex) => <li key={card.id}>
+        <TaskCard card={card} busy={busy} onOpen={() => onEdit(card, cardIndex)} />
+      </li>)}</ol>
+      : <p className="board-column__empty">No cards yet</p>}
+  </section>;
+}
+
+function CardEditor({ card, column, columns, index, onSave, onCancel, onMove, onDelete, onBusy }) {
+  const edit = useOperation();
+  const move = useOperation();
+  const remove = useOperation();
+  const [target, setTarget] = useState(column.id);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const cancelDelete = useRef(null);
+  const deleteButton = useRef(null);
+  const wasConfirming = useRef(false);
+  const priorityId = useId();
+  const moveId = useId();
+  const pending = edit.pending || move.pending || remove.pending;
+  const headingId = 'card-dialog-title';
+  const cardsInColumn = Array.isArray(column.cards) ? column.cards : [];
+  const moveColumns = Array.isArray(columns) ? columns : [column];
+
+  useEffect(() => { onBusy?.(pending); return () => { onBusy?.(false); }; }, [pending, onBusy]);
+  useEffect(() => {
+    if (confirmingDelete) cancelDelete.current?.focus();
+    else if (wasConfirming.current) deleteButton.current?.focus();
+    wasConfirming.current = confirmingDelete;
+  }, [confirmingDelete]);
+
+  function submitEdit(event) {
+    event.preventDefault();
+    if (pending) return;
+    const form = new FormData(event.currentTarget);
+    const body = {
+      title: String(form.get('title')).trim(),
+      description: String(form.get('description')).trim() || null,
+      priority: String(form.get('priority')),
+      dueDate: String(form.get('dueDate')) || null,
+    };
+    void edit.run(() => onSave(body));
+  }
+
+  function submitMove(event) {
+    event.preventDefault();
+    if (pending || target === column.id) return;
+    const destination = moveColumns.find((candidate) => candidate.id === target);
+    void move.run(() => onMove(target, Array.isArray(destination?.cards) ? destination.cards.length : 0));
+  }
+
+  function moveTo(columnId, newPosition) {
+    if (pending) return;
+    void move.run(() => onMove(columnId, newPosition));
+  }
+
+  if (confirmingDelete) {
+    return <>
+      <h2 id={headingId} className="modal-title">Delete card?</h2>
+      <p className="modal-copy">Delete “{card.title}”? This cannot be undone.</p>
+      <ErrorMessage error={remove.error} />
+      <div className="modal-actions">
+        <button ref={cancelDelete} type="button" disabled={remove.pending} onClick={() => setConfirmingDelete(false)}>Cancel deletion</button>
+        <button type="button" className="danger" disabled={remove.pending} onClick={() => { void remove.run(() => onDelete()); }}>{remove.pending ? 'Deleting…' : 'Confirm delete'}</button>
+      </div>
+    </>;
+  }
+
+  return <>
+    <h2 id={headingId} className="modal-title">{card ? 'Edit card' : `Add card to ${column.name}`}</h2>
+    <form className="editor" method="post" aria-label={card ? `Edit card ${card.title}` : `Add card to ${column.name}`} onSubmit={submitEdit}>
+      <Field label="Title (required)" name="title" required maxLength={200} pattern=".*\S.*" defaultValue={card?.title || ''} disabled={pending} error={edit.error?.fieldErrors?.title} />
+      <Field label="Description (optional, up to 5,000 characters)" name="description" multiline maxLength={5000} defaultValue={card?.description || ''} disabled={pending} error={edit.error?.fieldErrors?.description} />
+      <div className="field-row">
+        <div className="field"><label htmlFor={priorityId}>Priority</label><select id={priorityId} name="priority" defaultValue={priorityName(card?.priority)} disabled={pending}><option value="LOW">Low</option><option value="MEDIUM">Medium</option><option value="HIGH">High</option></select></div>
+        <Field label="Due date (optional)" name="dueDate" type="date" defaultValue={card?.dueDate || ''} disabled={pending} error={edit.error?.fieldErrors?.dueDate} />
+      </div>
+      <ErrorMessage error={edit.error} />
+      <div className="actions">
+        <button className="primary" type="submit" disabled={pending}>{edit.pending ? 'Saving…' : card ? 'Save card' : 'Create card'}</button>
+        <button type="button" disabled={pending} onClick={onCancel}>Cancel</button>
+        {card && <button ref={deleteButton} type="button" className="link-danger" aria-label={`Delete card ${card.title}`} disabled={pending} onClick={() => setConfirmingDelete(true)}>Delete card</button>}
+      </div>
+    </form>
+    {card && <section className="card-move" aria-labelledby="card-move-title">
+      <h3 id="card-move-title">Move card</h3>
+      <form className="card-move__form" aria-label={`Move ${card.title}`} onSubmit={submitMove}>
+        <div className="field">
+          <label htmlFor={moveId}>Move to column</label>
+          <select id={moveId} value={target} disabled={pending} onChange={(event) => setTarget(event.target.value)}>
+            {moveColumns.map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.name}</option>)}
+          </select>
+        </div>
+        <button type="submit" disabled={pending || target === column.id} aria-label={`Move ${card.title} to selected column`}>Move</button>
+      </form>
+      <div className="card-move__order">
+        <span>Order</span>
+        <button type="button" disabled={pending || index === 0} aria-label={`Move ${card.title} up`} title={`Move ${card.title} up`} onClick={() => moveTo(column.id, index - 1)}><ArrowUpIcon /></button>
+        <button type="button" disabled={pending || index === cardsInColumn.length - 1} aria-label={`Move ${card.title} down`} title={`Move ${card.title} down`} onClick={() => moveTo(column.id, index + 1)}><ArrowDownIcon /></button>
+      </div>
+      <ErrorMessage error={move.error} />
+    </section>}
+  </>;
 }
 
 export function Board() {
   const { boardId } = useParams();
   const resource = useResource(`/api/boards/${encodeURIComponent(boardId)}`);
-  const [editor, setEditor] = useState(null);
-  const [deleting, setDeleting] = useState(null);
-  const [formBusy, setFormBusy] = useState(false);
+  const [cardEditing, setCardEditing] = useState(null);
   const [editingBoard, setEditingBoard] = useState(false);
+  const [deletingBoard, setDeletingBoard] = useState(false);
+  const [formBusy, setFormBusy] = useState(false);
   const [status, setStatus] = useState('');
-  const op = useOperation();
+  const boardDelete = useOperation();
   const navigate = useNavigate();
   const board = resource.data?.board;
-  const columns = resource.data?.columns || [];
+  const columns = Array.isArray(resource.data?.columns) ? resource.data.columns : [];
+  const busy = formBusy || boardDelete.pending || resource.loading;
+
+  useEffect(() => {
+    if (!status) return undefined;
+    const timer = setTimeout(() => setStatus(''), 5000);
+    return () => clearTimeout(timer);
+  }, [status]);
+
   async function mutate(path, options, message) {
-    setStatus(''); await resource.api(path, options); setEditor(null); setDeleting(null);
+    setStatus('');
+    await resource.api(path, options);
+    setCardEditing(null);
+    setFormBusy(false);
     try { await resource.load(); setStatus(message); }
-    catch { setStatus('The change was saved, but the latest board could not be loaded. Use Try again to reload; do not repeat the change.'); }
+    catch { setStatus(RELOAD_WARNING); }
   }
-  return <Page title={board?.name || 'Board'}><p><Link to="/dashboard">Back to my boards</Link></p><p role="status">{status}</p><ResourceState resource={resource}>
-    {board && <>
-      {board.description && <p className="intro preserve-text">{board.description}</p>}
-      <div className="actions"><button type="button" disabled={op.pending || formBusy || resource.loading} onClick={() => { setEditingBoard(true); setEditor(null); }}>Edit board</button><button type="button" disabled={op.pending || formBusy || resource.loading} onClick={() => setDeleting({ type: 'board', ...board })}>Delete board</button></div>
-      {editingBoard && <BoardForm onBusy={setFormBusy} formBusy={op.pending} board={board} onCancel={() => setEditingBoard(false)} onSave={async (body) => { await resource.api(`/api/boards/${board.id}`, { method: 'PUT', body }); setEditingBoard(false); await resource.load().catch(() => {}); }} />}
-      <ErrorMessage error={op.error} />
-      {deleting && <ConfirmDelete board={deleting.type === 'board'} name={deleting.title || deleting.name} pending={op.pending || formBusy} onCancel={() => setDeleting(null)} onConfirm={() => { void op.run(async () => {
-        if (deleting.type === 'board') { await resource.api(`/api/boards/${board.id}`, { method: 'DELETE' }); navigate('/dashboard'); }
-        else await mutate(`/api/cards/${deleting.id}`, { method: 'DELETE' }, 'Card deleted.');
-      }); }} />}
-      {editor && <CardForm onBusy={setFormBusy} formBusy={op.pending} key={editor.card?.id || editor.column.id} card={editor.card} column={editor.column} onCancel={() => setEditor(null)} onSave={async (body) => {
-        await mutate(editor.card ? `/api/cards/${editor.card.id}` : `/api/columns/${editor.column.id}/cards`, { method: editor.card ? 'PUT' : 'POST', body }, editor.card ? 'Card updated.' : 'Card created.');
-      }} />}
-      <section className="board-section"><h2>Board columns</h2><p>Use the column selector or Move up / Move down to organize cards. No dragging required.</p><div className="columns">{columns.map((column) => <section className="column" key={column.id}><h2>{column.name} <span className="count">({column.cards.length})</span></h2><button type="button" disabled={op.pending || formBusy || resource.loading} onClick={() => { setEditingBoard(false); setEditor({ column }); }}>Add card to {column.name}</button>
-        {!column.cards.length && <p className="column-empty">No cards yet.</p>}
-        <ol className="card-list" role="list">{column.cards.map((card, index) => <li key={card.id}><Card card={card} column={column} columns={columns} index={index} busy={op.pending || formBusy || resource.loading} onEdit={() => { setEditingBoard(false); setEditor({ column, card }); }} onDelete={() => setDeleting({ type: 'card', ...card })} onMove={(targetColumnId, newPosition) => { void op.run(() => mutate(`/api/cards/${card.id}/move`, { method: 'POST', body: { targetColumnId, newPosition } }, 'Card moved.')); }} /></li>)}</ol>
-      </section>)}</div></section>
-    </>}
-  </ResourceState></Page>;
+
+  const actions = board ? <>
+    <button type="button" className="board-iconbtn" aria-label="Edit board" title="Edit board" disabled={busy} onClick={() => setEditingBoard(true)}><PencilIcon /></button>
+    <button type="button" className="board-iconbtn board-iconbtn--danger" aria-label="Delete board" title="Delete board" disabled={busy} onClick={() => setDeletingBoard(true)}><TrashIcon /></button>
+  </> : null;
+
+  return <Page title={board?.name || 'Board'} className="board-main" back={{ to: '/dashboard', label: 'All boards' }} actions={actions}>
+    {board?.description && <p className="board-description preserve-text">{board.description}</p>}
+    <ResourceState resource={resource} loading={<BoardSkeleton />}>
+      {board && (columns.length
+        ? <div className="board-columns">{columns.map((column, index) => <BoardColumn
+          column={column}
+          index={index}
+          busy={busy}
+          key={column.id}
+          onAdd={() => setCardEditing({ column })}
+          onEdit={(card, cardIndex) => setCardEditing({ column, card, index: cardIndex })}
+        />)}</div>
+        : <p className="board-empty">This board has no columns.</p>)}
+    </ResourceState>
+    <p className={`board-toast${status ? ' is-visible' : ''}`} role="status" aria-live="polite" aria-atomic="true">{status}</p>
+    {editingBoard && board && <Modal labelledBy="board-edit-title" panelClassName="board-modal" onClose={() => { if (!formBusy) setEditingBoard(false); }}>
+      <BoardForm headingId="board-edit-title" board={board} onBusy={setFormBusy} onCancel={() => setEditingBoard(false)} onSave={async (body) => {
+        await resource.api(`/api/boards/${board.id}`, { method: 'PUT', body });
+        setEditingBoard(false);
+        try { await resource.load(); setStatus('Board updated.'); }
+        catch { setStatus(RELOAD_WARNING); }
+      }} />
+    </Modal>}
+    {deletingBoard && board && <Modal labelledBy="board-delete-title" panelClassName="board-modal" onClose={() => { if (!boardDelete.pending) setDeletingBoard(false); }}>
+      <h2 id="board-delete-title" className="modal-title">Delete board?</h2>
+      <p className="modal-copy">Delete “{board.name}”? All columns and cards in this board will also be deleted. This cannot be undone.</p>
+      <ErrorMessage error={boardDelete.error} />
+      <div className="modal-actions">
+        <button type="button" disabled={boardDelete.pending} onClick={() => setDeletingBoard(false)}>Cancel deletion</button>
+        <button type="button" className="danger" disabled={boardDelete.pending} onClick={() => { void boardDelete.run(async () => {
+          await resource.api(`/api/boards/${board.id}`, { method: 'DELETE' });
+          navigate('/dashboard');
+        }); }}>{boardDelete.pending ? 'Deleting…' : 'Confirm delete'}</button>
+      </div>
+    </Modal>}
+    {cardEditing && <Modal labelledBy="card-dialog-title" panelClassName="board-modal card-modal" onClose={() => { if (!formBusy) setCardEditing(null); }}>
+      <CardEditor
+        key={cardEditing.card?.id || cardEditing.column.id}
+        card={cardEditing.card}
+        column={cardEditing.column}
+        columns={columns}
+        index={cardEditing.index}
+        onBusy={setFormBusy}
+        onCancel={() => setCardEditing(null)}
+        onSave={(body) => mutate(
+          cardEditing.card ? `/api/cards/${cardEditing.card.id}` : `/api/columns/${cardEditing.column.id}/cards`,
+          { method: cardEditing.card ? 'PUT' : 'POST', body },
+          cardEditing.card ? 'Card updated.' : 'Card created.',
+        )}
+        onMove={(targetColumnId, newPosition) => mutate(
+          `/api/cards/${cardEditing.card.id}/move`,
+          { method: 'POST', body: { targetColumnId, newPosition } },
+          'Card moved.',
+        )}
+        onDelete={() => mutate(`/api/cards/${cardEditing.card.id}`, { method: 'DELETE' }, 'Card deleted.')}
+      />
+    </Modal>}
+  </Page>;
 }

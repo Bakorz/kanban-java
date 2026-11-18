@@ -43,17 +43,8 @@ p { margin: 0 0 1rem; max-inline-size: 72ch; overflow-wrap: anywhere; }
 .app-header nav a[aria-current="page"] { font-weight: 700; text-decoration: underline; }
 main { max-inline-size: 1160px; margin: 0 auto; padding: 2.5rem 1.25rem 3rem; min-block-size: calc(100svh - 180px); }
 .sr-only { position: absolute; inline-size: 1px; block-size: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
-.intro { color: var(--muted); font-size: 1.05rem; margin-block-end: 1.8rem; }
 .notice { background: #eef4ff; border: 1px solid #cfdcee; padding: 1rem 1.2rem; border-radius: 6px; margin-block: 1.5rem; max-inline-size: 78ch; }
 .notice p { margin: 0.25rem 0 0; }
-.board-section { margin-block-start: 2.5rem; }
-.board-section > p { color: var(--muted); }
-.columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-block-start: 1.2rem; }
-.column { background: #f1f5fb; padding: 1.25rem; border-block-start: 2px solid #94a3b8; min-block-size: 180px; }
-.column:nth-child(2) { border-block-start-color: #1d4ed8; }
-.column:nth-child(3) { border-block-start-color: #1e40af; }
-.column p { color: var(--muted); font-size: 0.9rem; }
-.column .column-empty { margin-block-start: 1.7rem; font-size: 0.85rem; }
 .connection { display: flex; flex-wrap: wrap; gap: 0.7rem 1.5rem; align-items: start; border-block-start: 1px solid var(--line); padding-block-start: 1.75rem; margin-block-start: 2.5rem; }
 .connection > div { flex: 1 1 340px; }
 .connection p { color: var(--muted); margin-block-end: 0; }
@@ -69,36 +60,130 @@ textarea { min-block-size: 110px; resize: vertical; }
 input:user-invalid, textarea:user-invalid { border-color: #a12525; }
 button, .button { min-block-size: 48px; }
 .field { display: flex; flex-direction: column; gap: 0.3rem; margin-block-end: 1.2rem; }
-.field label, .move-form label { font-weight: 600; }
+.field label { font-weight: 600; }
 .field [aria-invalid="true"] { border-color: #a12525; }
 .field span, .error { color: #922121; }
 .error p { margin-block-end: 0; }
 .editor { max-inline-size: 650px; padding: 1.25rem; background: #fff; border: 1px solid var(--line); border-radius: 6px; margin-block: 1.5rem; }
 .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .danger { color: #922121; border-color: #922121; }
-.card-list { padding: 0; list-style: none; }
-.card { margin-block-start: 1rem; padding: 1rem; background: #fff; border: 1px solid var(--line); border-radius: 6px; overflow-wrap: anywhere; }
-.card h3 { font-size: 1.05rem; }
-.card .card-meta { font-size: 0.85rem; color: #43536b; }
-.column { min-inline-size: 0; padding: 1rem; }
-.column h2 { font-size: 1.1rem; overflow-wrap: anywhere; }
-.column > button { inline-size: 100%; }
-.card .actions button { flex: 1 1 auto; padding-inline: 0.6rem; }
-.move-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.5rem; margin-block: 1rem 0.5rem; }
-.move-form label { grid-column: 1 / -1; font-size: 0.9rem; }
-.move-form button { padding-inline: 0.6rem; }
-.reorder button { font-size: 0.9rem; }
 .preserve-text { white-space: pre-wrap; }
-.count { color: var(--muted); font-weight: 400; }
-@media (max-width: 900px) and (min-width: 641px) { .columns { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------------------------------------------------------------- modal */
+.modal-layer {
+  position: fixed;
+  z-index: 30;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+  padding: clamp(1rem, 6vh, 4rem) 1rem;
+  background: rgb(11 27 51 / 0.42);
+  backdrop-filter: blur(3px);
+  animation: modal-layer-in 170ms ease-out both;
+}
+
+.modal-panel {
+  inline-size: min(100%, 32rem);
+  max-block-size: calc(100svh - 2rem);
+  margin-block: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: clamp(1.4rem, 4vw, 2rem);
+  border: 1px solid #d9e4f2;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 36px 80px -40px rgb(11 27 51 / 0.65);
+  animation: modal-panel-in 220ms cubic-bezier(0.2, 0.75, 0.2, 1) both;
+}
+
+.modal-panel:focus { outline: none; }
+
+.modal-panel .editor {
+  max-inline-size: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.modal-title,
+.modal-panel .editor h2 {
+  margin: 0 0 1.1rem;
+  font-size: clamp(1.35rem, 2.4vw, 1.55rem);
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+.modal-copy {
+  max-inline-size: 52ch;
+  margin: 0 0 1.3rem;
+  color: var(--muted);
+  font-size: 0.96rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.modal-panel .field { gap: 0.38rem; margin-block-end: 1.05rem; }
+.modal-panel .field label { color: #34475f; font-size: 0.9rem; }
+.modal-panel input,
+.modal-panel textarea,
+.modal-panel select { border-color: #cddbec; border-radius: 9px; background: #fff; }
+.modal-panel input { min-block-size: 50px; }
+.modal-panel textarea { min-block-size: 112px; }
+.modal-panel input:focus-visible,
+.modal-panel textarea:focus-visible,
+.modal-panel select:focus-visible {
+  border-color: var(--accent);
+  outline: 3px solid var(--accent);
+  outline-offset: 1px;
+}
+.modal-panel .actions { gap: 0.6rem; margin-block-start: 1.3rem; }
+.modal-panel .actions .primary { min-inline-size: 8.5rem; }
+
+.modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-block-start: 1.3rem;
+}
+
+.modal-actions .primary { min-inline-size: 8.5rem; }
+
+.link-danger {
+  min-block-size: 44px;
+  margin-inline-start: auto;
+  padding-inline: 0.4rem;
+  border-color: transparent;
+  background: transparent;
+  color: #922121;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.link-danger:hover { background: #fff5f5; }
+
+@keyframes modal-layer-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modal-panel-in { from { opacity: 0; transform: translateY(10px) scale(0.985); } to { opacity: 1; transform: none; } }
+
 @media (max-width: 640px) {
   .app-header { padding: 0.7rem 1.25rem; }
   .app-header nav { gap: 0.65rem; }
   main { padding-block-start: 1.75rem; }
-  .columns { grid-template-columns: minmax(0, 1fr); }
-  .column { min-block-size: 145px; }
-  .column .column-empty { margin-block-start: 1rem; }
   .connection { gap: 1rem; }
+  .modal-layer { padding: 0.75rem; }
+  .modal-panel { max-block-size: calc(100svh - 1.5rem); padding: 1.25rem 1.1rem 1.35rem; }
+  .modal-actions > button { flex: 1 1 auto; }
+  .link-danger { margin-inline-start: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-layer,
+  .modal-panel { animation: none; }
 }
 
 @media (max-width: 370px) {

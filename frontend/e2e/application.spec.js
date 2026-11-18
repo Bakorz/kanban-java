@@ -62,14 +62,15 @@ test('SDK login board/card CRUD keyboard moves null clearing and logout', async 
     await page.getByRole('button', { name: 'Create card', exact: true }).click();
     await expect(page.getByRole('heading', { name: title })).toBeVisible();
   }
+  await page.getByRole('button', { name: 'Edit card Review the result' }).click();
   await page.getByRole('button', { name: 'Move Review the result up' }).focus();
   await expect(page.getByRole('button', { name: 'Move Review the result up' })).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('status')).toHaveText('Card moved.');
   expect(mutations).toContainEqual({ path: '/api/cards/card2/move', method: 'POST', body: { targetColumnId: 'col0', newPosition: 0 } });
-  const card = page.getByRole('article').filter({ has: page.getByRole('heading', { name: 'Write a useful task' }) });
-  await card.getByLabel('Move to column').selectOption('col1');
-  await card.getByRole('button', { name: 'Move Write a useful task to selected column' }).focus();
+  await page.getByRole('button', { name: 'Edit card Write a useful task' }).click();
+  await page.getByLabel('Move to column').selectOption('col1');
+  await page.getByRole('button', { name: 'Move Write a useful task to selected column' }).focus();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('status')).toHaveText('Card moved.');
   await page.getByRole('button', { name: 'Edit card Write a useful task' }).click();
@@ -79,6 +80,7 @@ test('SDK login board/card CRUD keyboard moves null clearing and logout', async 
   expect(mutations).toContainEqual({ path: '/api/cards/card1', method: 'PUT', body: { title: 'Write a useful task', description: null, priority: 'MEDIUM', dueDate: null } });
   await expect(page.locator('body')).toHaveJSProperty('scrollWidth', await page.locator('body').evaluate((el) => el.clientWidth));
   await page.screenshot({ path: `.tools/screenshots/workspace-${testInfo.project.name}.png`, fullPage: true });
+  await page.getByRole('button', { name: 'Edit card Review the result' }).click();
   await page.getByRole('button', { name: 'Delete card Review the result' }).click();
   await expect(page.getByRole('button', { name: 'Cancel deletion' })).toBeFocused();
   await page.getByRole('button', { name: 'Confirm delete' }).click();

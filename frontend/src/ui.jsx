@@ -1,11 +1,60 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
-export function Page({ title, children, className }) {
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+export function Page({ title, children, className, back, actions }) {
   const heading = useRef(null);
   const { pathname } = useLocation();
   useEffect(() => { document.title = `${title} | Kanban`; heading.current?.focus(); }, [title, pathname]);
-  return <main className={className}><h1 id="content" ref={heading} tabIndex={-1}>{title}</h1>{children}</main>;
+  const titleHeading = <h1 id="content" ref={heading} tabIndex={-1}>{title}</h1>;
+  return <main className={className}>
+    {back || actions
+      ? <div className="page-heading">
+        <div className="page-heading__text">
+          {back && <Link className="page-back" to={back.to}>{back.label}</Link>}
+          {titleHeading}
+        </div>
+        {actions && <div className="page-heading__actions">{actions}</div>}
+      </div>
+      : titleHeading}
+    {children}
+  </main>;
+}
+
+export function Modal({ labelledBy, onClose, children, panelClassName = '' }) {
+  const panel = useRef(null);
+  const returnTo = useRef(null);
+  useEffect(() => {
+    returnTo.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const autofocus = panel.current?.querySelector('[data-autofocus], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled]), a[href]');
+    autofocus?.focus();
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      if (returnTo.current?.isConnected) returnTo.current.focus();
+      else document.getElementById('content')?.focus();
+    };
+  }, []);
+  function onKeyDown(event) {
+    if (event.key === 'Escape') { event.preventDefault(); onClose(); return; }
+    if (event.key !== 'Tab') return;
+    const candidates = [...(panel.current?.querySelectorAll(FOCUSABLE) || [])];
+    if (!candidates.length) { event.preventDefault(); panel.current?.focus(); return; }
+    const active = document.activeElement;
+    if (!candidates.includes(active)) {
+      event.preventDefault();
+      (event.shiftKey ? candidates[candidates.length - 1] : candidates[0]).focus();
+    } else if (!event.shiftKey && active === candidates[candidates.length - 1]) {
+      event.preventDefault(); candidates[0].focus();
+    } else if (event.shiftKey && active === candidates[0]) {
+      event.preventDefault(); candidates[candidates.length - 1].focus();
+    }
+  }
+  return <div className="modal-layer" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+    <div className={`modal-panel${panelClassName ? ` ${panelClassName}` : ''}`} role="dialog" aria-modal="true" aria-labelledby={labelledBy} ref={panel} tabIndex={-1} onKeyDown={onKeyDown}>{children}</div>
+  </div>;
 }
 
 export function ErrorMessage({ error }) {
@@ -33,10 +82,4 @@ export function useOperation() {
     finally { lock.current = false; setPending(false); }
   }
   return { pending, error, run };
-}
-
-export function ConfirmDelete({ name, pending, onConfirm, onCancel, board = false }) {
-  const cancel = useRef(null);
-  useEffect(() => { cancel.current?.focus(); }, []);
-  return <div className="notice confirmation"><p>Delete “{name}”? {board ? 'All columns and cards in this board will also be deleted. ' : ''}This cannot be undone.</p><div className="actions"><button type="button" ref={cancel} disabled={pending} onClick={onCancel}>Cancel deletion</button><button type="button" className="danger" disabled={pending} onClick={onConfirm}>{pending ? 'Deleting…' : 'Confirm delete'}</button></div></div>;
 }

@@ -140,6 +140,23 @@ describe('board and card operations', () => {
     expect(newBoard).toHaveFocus();
     expect(document.body.style.overflow).toBe('');
   });
+  it('opens the card editor in a focused modal and restores focus when dismissed', async () => {
+    const { client } = mockAuth(testSession);
+    vi.stubGlobal('fetch', vi.fn(async () => reply({ board: { id: 'b1', name: 'Work' }, columns: [
+      { id: 'todo', name: 'To Do', cards: [{ id: 'c1', title: 'First task', priority: 'HIGH', dueDate: '2026-11-21' }] },
+    ] })));
+    route('/boards/b1', client);
+    await screen.findByRole('heading', { name: 'Work', level: 1 });
+    const cardButton = screen.getByRole('button', { name: 'Edit card First task' });
+    cardButton.focus(); fireEvent.click(cardButton);
+    expect(await screen.findByRole('dialog', { name: 'Edit card' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Title (required)')).toHaveFocus();
+    expect(document.body.style.overflow).toBe('hidden');
+    fireEvent.keyDown(screen.getByRole('dialog', { name: 'Edit card' }), { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(cardButton).toHaveFocus();
+    expect(document.body.style.overflow).toBe('');
+  });
   it('locks other controls while saving and displays server field errors without a fake save', async () => {
     const { client } = mockAuth(testSession); let resolve;
     vi.stubGlobal('fetch', vi.fn(async (_path, options) => options.method === 'GET' ? reply({ board: { id: 'b1', name: 'Work' }, columns: [{ id: 'todo', name: 'To Do', cards: [] }] }) : new Promise((r) => { resolve = r; })));
@@ -196,8 +213,10 @@ describe('board and card operations', () => {
     fireEvent.change(screen.getByLabelText(/Description \(optional/), { target: { value: '' } }); fireEvent.change(screen.getByLabelText('Due date (optional)'), { target: { value: '' } });
     fireEvent.submit(screen.getByRole('form', { name: 'Edit card First task' })); await waitFor(() => expect(screen.queryByRole('button', { name: 'Save card' })).not.toBeInTheDocument());
     expect(requests).toContainEqual(['/api/cards/c1', 'PUT', { title: 'First task', description: null, priority: 'MEDIUM', dueDate: null }]);
+    fireEvent.click(screen.getByRole('button', { name: 'Edit card First task' }));
     fireEvent.change(screen.getByLabelText('Move to column'), { target: { value: 'done' } }); fireEvent.submit(screen.getByRole('form', { name: 'Move First task' })); await screen.findByText('Card moved.');
     expect(requests).toContainEqual(['/api/cards/c1/move', 'POST', { targetColumnId: 'done', newPosition: 0 }]);
+    fireEvent.click(screen.getByRole('button', { name: 'Edit card First task' }));
     fireEvent.click(screen.getByRole('button', { name: 'Delete card First task' })); expect(screen.getByRole('button', { name: 'Cancel deletion' })).toHaveFocus(); fireEvent.click(screen.getByRole('button', { name: 'Confirm delete' })); await screen.findByText('Card deleted.'); expect(screen.queryByRole('heading', { name: 'First task' })).not.toBeInTheDocument();
     expect(requests.filter((r) => r[1] === 'GET')).toHaveLength(5);
   });

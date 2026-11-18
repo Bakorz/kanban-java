@@ -50,15 +50,21 @@ actual origin. Do not log callback parameters or tokens.
 searchable card grid: each card renders a miniature of the board's real columns
 and cards, with each task strip coloured by its column status, and the round
 `+` opens a focused create dialog. Search matches board names and descriptions.
-Board editing and deletion remain inside the board; cards support title,
-optional description, LOW/MEDIUM/HIGH priority, date-only due date, editing,
-deleting and keyboard-usable column/up/down movement. Blank descriptions/dates
-are sent as null; dates are never converted to timestamps. Successful mutations
-close their editor/confirmation immediately and reload canonical API state; if that
-reload fails, the UI says the change was saved and offers a reload-only retry, so a
-committed create cannot be replayed as a duplicate. Native forms supply labels,
-autocomplete, length constraints, pending locks and structured server field errors.
-Mobile columns stack vertically rather than requiring horizontal page scrolling.
+The board page keeps its header to an `All boards` link, the board title and
+description, and two icon actions for editing and deleting the board. Columns
+sit side by side with a status dot, count and a `+` add-card control; each card
+keeps only its title, a clamped description and compact priority/due metadata.
+Clicking a card opens one focused editor for its title, optional description,
+LOW/MEDIUM/HIGH priority, date-only due date, column/up/down movement and
+deletion. Board and card actions use the same modal with a focus trap,
+Escape/backdrop closing, scroll lock and focus restoration. Blank
+descriptions/dates are sent as null; dates are never converted to timestamps.
+Successful mutations close their editor/confirmation immediately and reload
+canonical API state; if that reload fails, the UI says the change was saved and
+offers a reload-only retry, so a committed create cannot be replayed as a
+duplicate. Native forms supply labels, autocomplete, length constraints, pending
+locks and structured server field errors. Columns stack below 720px rather than
+requiring horizontal page scrolling.
 
 Private requests go only to same-origin `/api`, use SDK bearer tokens, omit
 cookies, reject redirects, disable caches and have finite timeouts. GET after a
