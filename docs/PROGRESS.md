@@ -30,8 +30,29 @@ keyboard-usable controls, and no decorative animation or branding exercise.
   verification passed, including constraints, nullable clearing, role grants,
   browser denial, deferred reorder, rollback, and cascades. Not applied to Supabase.
 
-The frontend is not yet a working authenticated Kanban application. A health success
-checks Java liveness only, never database or authentication readiness.
+## Core implementation verification (in progress)
+
+- Supabase SDK-only auth provider, guarded routes, login/registration/recovery,
+  same-origin API client, board/card forms and keyboard move controls implemented.
+- Java ES256 verifier, bounded JWKS transport/cache, strict JSON/routes, lazy JDBC pool,
+  ownership predicates, CRUD, board locking, dense ordering, and rollback implemented.
+- Local clean backend package passed 43 tests with zero skips, including actual
+  PostgreSQL/HTTP CRUD as the restricted runtime role, two-user isolation,
+  concurrency, mid-move rollback, and consistent snapshots.
+- Browser-to-real-Java/PostgreSQL CRUD passed on desktop and mobile with synthetic
+  Auth only. Reload, nullable clearing, movement and deletion were exercised.
+- The test pool now uses `kanban_runtime` with the authoritative grants/RLS;
+  migration/bootstrap/trigger DDL use a separate test-only administrator connection.
+  The container readiness race was fixed by probing its published loopback JDBC
+  endpoint with a bounded deadline. Restricted-role denial assertions pass.
+- Paused at owner's request. Frontend agent reports47 unit tests/build and12 mocked
+  browser tests pass; saved-but-refresh-failed regression is fixed. A synchronous
+  SDK-account-switch microtask race remains OPEN; current render-time scope guard
+  is not sufficient. Do not release this checkpoint as fully reviewed.
+- See HANDOFF.md for exact resume steps. No implementation agents/jobs remain running.
+
+These are local fixture-based results, not a completed live Supabase demo.
+A health success checks Java liveness only, never database/auth readiness.
 
 ## Supabase development configuration
 

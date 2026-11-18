@@ -3,6 +3,8 @@ import { createServer } from 'node:net';
 import { setTimeout as delay } from 'node:timers/promises';
 
 // Temporary integration test servers, not deployment. Never contacts Supabase.
+// CRUD mode adds isolated PostgreSQL + synthetic Auth; the actual data API is unmocked.
+const realCrud = process.argv.includes('--crud');
 if (process.platform === 'win32') throw new Error('Use Linux/macOS (process-group cleanup required).');
 const children = [];
 let cleanupPromise;
@@ -42,7 +44,7 @@ try {
       probe.listen(port, '127.0.0.1', () => probe.close(resolve));
     });
   }
-  const args = ['-B', '-ntp', '-f', 'backend/pom.xml', '-Pdev', 'package', 'exec:exec'];
+  const args = ['-B', '-ntp', '-f', 'backend/pom.xml', realCrud ? '-Pe2e' : '-Pdev', 'package', 'exec:exec'];
   if (process.env.MAVEN_REPO_LOCAL) args.unshift(`-Dmaven.repo.local=${process.env.MAVEN_REPO_LOCAL}`);
   const backend = launch(process.env.MVN || 'mvn', args);
   let stopped = false;
@@ -60,12 +62,13 @@ try {
     await delay(1000);
   }
   if (!ready) throw new Error('Backend health did not become ready within 180 seconds.');
-  const browser = launch('npm', ['run', 'test:e2e'], {
-    cwd: 'frontend', env: { ...process.env, KANBAN_E2E_REAL_API: '1' },
+  const browser = launch('npm', realCrud ? ['run', 'test:e2e', '--', 'real-crud.spec.js', '--workers=1'] : ['run', 'test:e2e'], {
+    cwd: 'frontend',
+    env: { ...process.env, KANBAN_E2E_REAL_API: realCrud ? '0' : '1', KANBAN_E2E_REAL_CRUD: realCrud ? '1' : '0' },
   });
   const result = await browser.done;
   if (result.code !== 0) throw new Error(`Browser integration failed (exit ${result.code}, signal ${result.signal}).`);
-  console.log('Real React → Vite proxy → Servlet health integration passed.');
+  console.log(realCrud ? 'Real React → Servlet → PostgreSQL CRUD integration passed (synthetic Auth only).' : 'Real React → Vite proxy → Servlet health integration passed.');
 } catch (error) {
   console.error(error.message);
   process.exitCode = 1;

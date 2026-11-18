@@ -4,7 +4,7 @@ A personal Kanban application planned for a university Java web project.
 
 **Stack:** React + Java Servlets + JDBC + Supabase PostgreSQL + Supabase Auth.
 
-**Status:** Foundation implemented: React routes, Servlet health endpoint, build/test commands, and credential-free CI. Authentication, JDBC integration, and real board/card features are not implemented yet. No Supabase migrations or deployment have been performed. See [progress and approved scope](<docs/PROGRESS.md>).
+**Status:** Core implementation is under verification: Supabase SDK auth screens, Java JWT/JDBC infrastructure, board/card CRUD, and transactional movement. Local PostgreSQL and synthetic-token tests pass; real-project database/Auth/email acceptance is still pending. No deployment or production promotion has been performed. See [progress and approved scope](<docs/PROGRESS.md>).
 
 ## Documentation
 
@@ -12,6 +12,8 @@ A personal Kanban application planned for a university Java web project.
 - [Implementation backlog](<docs/TASKS.md>) — 37 core tasks and 3 optional enhancements with dependencies and completion checks.
 - [Setup and credential handling](<docs/SETUP.md>) — public configuration, private environment settings, and access gates.
 - [Local course demo guide](<docs/LOCAL-DEMO.md>) — owner-approved localhost setup, SQL steps, private launcher, and remaining acceptance checks.
+- [Java API reference](<docs/API.md>) — routes, response envelopes, validation, ordering, and errors.
+- [Course demo script](<docs/DEMO-SCRIPT.md>) — core walkthrough and Java concepts to explain.
 - [Contribution and Git workflow](<CONTRIBUTING.md>) — branching, commits, and secret safety.
 
 ## Architecture
@@ -64,9 +66,10 @@ mvn -f backend/pom.xml -Pdev package exec:exec
 npm run dev --prefix frontend
 ```
 
-Open <http://localhost:5173/dashboard> on the machine running these commands.
+Open <http://localhost:5173/preview> on the machine running these commands.
 Click **Check connection** to call the real Java health endpoint through Vite's
-`/api` proxy. Both servers bind loopback only; stop them with Ctrl+C.
+`/api` proxy. The dashboard/board routes require a real Supabase SDK session;
+follow the local demo guide to configure Auth and the restricted runtime database. Both servers bind loopback only; stop them with Ctrl+C.
 This does not deploy the app or change the agent GUI.
 
 Browser and real-integration verification (ports 8080 and 5173 must be free):
@@ -75,7 +78,13 @@ Browser and real-integration verification (ports 8080 and 5173 must be free):
 cd frontend && npx playwright install chromium && cd ..
 npm run test:e2e --prefix frontend
 node scripts/verify-foundation.mjs
+node scripts/verify-foundation.mjs --crud
 ```
+
+The CRUD mode uses synthetic Auth only; board/card requests reach real Java and
+an isolated PostgreSQL container. It verifies persistence after reload and
+clearing/moving/deleting through the actual UI, not mocked application APIs.
+Docker is required for the backend integration suite and CRUD browser mode.
 
 On this sandboxed host, use `NPM_CONFIG_CACHE=/tmp/kanban-npm-cache`,
 `PLAYWRIGHT_BROWSERS_PATH="$PWD/.tools/playwright"`, and
@@ -83,8 +92,9 @@ On this sandboxed host, use `NPM_CONFIG_CACHE=/tmp/kanban-npm-cache`,
 `MAVEN_REPO_LOCAL="$PWD/backend/.m2"` for the integration script if its home cache is unavailable.
 For direct Maven commands, add `-Dmaven.repo.local="$PWD/backend/.m2"` as a command argument.
 See the [frontend guide](<frontend/README.md>) and [backend guide](<backend/README.md>).
-The health endpoint is public liveness only; all other API routes currently reject
-requests, including requests containing an unverified token.
+The health endpoint is public liveness only. All other API routes require verified
+Supabase JWTs and configured runtime data services; missing configuration stays
+closed, and an unverified token never authorizes application access.
 
 ## Security
 

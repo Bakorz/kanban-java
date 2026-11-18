@@ -64,7 +64,7 @@ def main():
         environment = os.environ.copy()
         environment.update(values)
         # Exec via Maven in the foreground; Ctrl+C reaches the regular shutdown path.
-        return subprocess.call([maven, "-f", str(ROOT / "backend" / "pom.xml"), "-Pdev", "package", "exec:exec"],
+        return subprocess.call([maven, "-f", str(ROOT / "backend" / "pom.xml"), "-Pdev", "-DskipTests", "package", "exec:exec"],
                                cwd=ROOT, env=environment)
     except (ValueError, OSError):
         # Never print OSError paths or rejected contents; these may include private values.

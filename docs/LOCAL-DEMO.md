@@ -1,12 +1,15 @@
 # Local course demo setup
 
 Target approved by owner: own computer, English personal Kanban, development
-Supabase project only. Email confirmation is OFF for this disposable project;
-that does not verify email ownership. Password recovery still needs mail delivery.
+Supabase project only. Owner chose email confirmation OFF for this disposable
+project; public settings last checked still indicated confirmation required, so
+save/recheck that setting before live signup. Confirmation OFF does not verify
+email ownership. Password recovery still needs mail delivery.
 
-**Current checkpoint:** foundation is runnable; full Auth/CRUD implementation is
-being completed and must pass its own tests. These instructions describe the
-selected setup, not proof of a successful live end-to-end demonstration.
+**Current checkpoint:** Auth/CRUD code is implemented and local fixture-based
+verification is in progress. Real Java/PostgreSQL browser CRUD has passed, but
+actual Supabase sign-in, runtime TLS connectivity, and email recovery remain
+unverified. These instructions are not proof of a live end-to-end demonstration.
 
 ## 1. Install tools
 

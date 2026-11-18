@@ -1,4 +1,4 @@
-# Frontend foundation
+# Personal Kanban frontend
 
 React 19.3.1, React DOM 19.3.1, React Router 7.18.5, Vite 8.3.8,
 Vite React plugin 6.3.0. Use Node 24.x (verified 24.22.3) and npm 11.x
@@ -13,7 +13,7 @@ From this directory:
 npm ci
 npm run dev
 # Separate shell; see backend/README.md for starting Java on 127.0.0.1:8080.
-# Visit http://127.0.0.1:5173 and click Check connection.
+# Visit http://127.0.0.1:5173/preview and click Check connection.
 npm test
 npm run build
 ```
@@ -28,27 +28,53 @@ and alternate paths fail closed. Production hosting must serve the static
 build with an SPA fallback and proxy `/api` to Java; do not rewrite API errors
 to the frontend document. No production deployment is configured here.
 
-## Honest scaffold, not an implemented product
+## Authentication and saved work
 
-The dashboard and board preview contain no persisted boards/cards. All account
-screens explicitly state that Supabase Auth is not connected. They do not
-collect passwords, exchange callback tokens, establish sessions, or claim that
-routes are protected. Java must enforce authentication and ownership regardless
-of React route guards when those features are implemented.
+Configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in an ignored
+local environment file, then restart Vite. Use a public/publishable key, never a
+service-role key. Without both settings the application makes no Auth calls and
+displays setup instructions; `/preview` remains public. No live project URL/key
+is tracked, and all `VITE_*` values are visible in client bundles.
+
+Supabase SDK owns PKCE callback exchange, session persistence, refresh and logout.
+The provider unsubscribes on unmount and invalidates user-scoped views on identity
+changes or logout. Signup supports both immediate sessions and email confirmation
+with a null session. Recovery responses are neutral; password updates require an
+SDK `PASSWORD_RECOVERY` event, never an arbitrary signed-in session. Recovery
+permission is intentionally memory-only: after reloading an already-consumed
+recovery URL, request a fresh recovery link. Configure the provider's allowed
+redirect URLs for `/auth/callback` and `/reset-password` on the application's
+actual origin. Do not log callback parameters or tokens.
+
+`/dashboard` and `/boards/:boardId` require a session. Boards can be created,
+opened, renamed and deleted (with a cascade warning). Cards support title,
+optional description, LOW/MEDIUM/HIGH priority, date-only due date, editing,
+deleting and keyboard-usable column/up/down movement. Blank descriptions/dates
+are sent as null; dates are never converted to timestamps. Successful mutations
+reload canonical API state. Native forms supply labels, autocomplete, length
+constraints, pending locks and structured server field errors. Mobile columns
+stack vertically rather than requiring horizontal page scrolling.
+
+Private requests go only to same-origin `/api`, use SDK bearer tokens, omit
+cookies, reject redirects, disable caches and have finite timeouts. GET after a
+401 may refresh and retry once; mutations are never automatically retried. Java
+must independently enforce JWT verification and ownership; route guards are not
+an authorization boundary. No drag-and-drop, sharing or production deployment is
+included.
 
 The health button checks **liveness only**: JSON `status: ok` and
 `service: kanban-api`. It neither authenticates nor checks the database.
 Requests are bounded to five seconds, omit credentials, and do not follow
 redirects. No public health request is made automatically.
 
-Routes: `/dashboard`, `/boards/:boardId` (`preview` is a layout only), `/login`,
+Routes: `/preview` (public layout and health only), `/dashboard`, `/boards/:boardId`, `/login`,
 `/register`, `/forgot-password`, `/reset-password`, `/auth/reset-password`
 (alias), `/auth/callback`, and a not-found screen. `/` redirects to `/dashboard`.
 Each route updates the document title and focuses its first heading. The skip
 link targets that heading, not a large interactive container.
 
-No live project URL/key is tracked. `.env.example` contains public placeholders
-for future Auth work only; all `VITE_*` values are visible in client bundles.
+The repository environment example contains placeholders only. Never commit a
+real project configuration or credentials.
 
 ## Browser tests
 
@@ -63,9 +89,15 @@ PLAYWRIGHT_BROWSERS_PATH="$PWD/../.tools/playwright" npm run test:e2e
 
 Playwright starts and stops its own temporary loopback Vite server. Stop other
 servers on port 5173 first; the config intentionally does not reuse them.
-Default browser tests mock only the public health response and test success,
-invalid-JSON-content errors, retry, route focus, keyboard skip navigation,
-mobile reflow, and screenshots under ignored `.tools/screenshots/`.
+Default browser tests use a synthetic, non-secret Auth endpoint configured only
+by Playwright. They intercept SDK HTTP responses and the Java API. There is no
+production fixture flag, injected session storage, custom JWT implementation or
+live Supabase access. They exercise public health/error/retry, SDK login, signup
+confirmation, actual SDK-generated PKCE recovery exchange, card/board CRUD,
+null clearing, keyboard moves/focus, mobile reflow and logout. Screenshots are
+saved under ignored `.tools/screenshots/`. Unit tests mock SDK/fetch directly and
+cover cleanup, identity invalidation, initial loading/guards, bounded 401 retry,
+no mutation retry, request/SDK timeouts and server field errors.
 
 For an actual Java → Vite proxy → browser health verification, start the Java
 backend on 8080 separately, then run:
@@ -74,8 +106,24 @@ backend on 8080 separately, then run:
 KANBAN_E2E_REAL_API=1 PLAYWRIGHT_BROWSERS_PATH="$PWD/../.tools/playwright" npm run test:e2e
 ```
 
-This leaves health network requests unmocked; the mock-specific failure case
-is skipped. No Supabase access is needed. Stop the backend afterward.
+This leaves health network requests unmocked; mock-specific application/failure
+cases are skipped. No Supabase access is needed. Stop the backend afterward.
+
+For real saved-data browser integration, start the backend's isolated E2E fixture
+(which produces ignored `backend/target/e2e-session.json`), then run:
+
+```sh
+KANBAN_E2E_REAL_CRUD=1 PLAYWRIGHT_BROWSERS_PATH="$PWD/../.tools/playwright" npx playwright test real-crud.spec.js
+```
+
+Do not also set `KANBAN_E2E_REAL_API`: the CRUD fixture intentionally keeps the
+synthetic SDK endpoint but does **not** intercept any `/api` requests. Java verifies
+the fixture's signed token against its local fixture issuer. The browser creates
+unique per-project boards, verifies persistence across reloads, clears nullable
+fields, moves cards, renames and deletes records through Java/PostgreSQL. This is
+not evidence of a live Supabase sign-in or production deployment. Parent integration
+verification passed this flow in both desktop and mobile Chromium; the normal
+suite skips it unless explicitly enabled.
 
 If your npm home cache is not writable, prefix npm/npx commands with
 `NPM_CONFIG_CACHE=/tmp/kanban-npm-cache`; do not change ownership of a shared

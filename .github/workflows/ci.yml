@@ -49,6 +49,8 @@ jobs:
         run: npm run test:e2e --prefix frontend
       - name: Verify real React to Servlet connection
         run: node scripts/verify-foundation.mjs
+      - name: Verify browser CRUD against real Java and PostgreSQL
+        run: node scripts/verify-foundation.mjs --crud
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
