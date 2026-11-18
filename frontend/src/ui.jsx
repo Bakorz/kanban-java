@@ -22,6 +22,14 @@ export function Page({ title, children, className, back, actions }) {
   </main>;
 }
 
+export function WorkspaceLoading({ label }) {
+  const labelId = useId();
+  return <div className="workspace-loading">
+    <span id={labelId}>{label}</span>
+    <progress aria-labelledby={labelId} />
+  </div>;
+}
+
 export function Modal({ labelledBy, onClose, children, panelClassName = '' }) {
   const panel = useRef(null);
   const returnTo = useRef(null);
@@ -29,7 +37,7 @@ export function Modal({ labelledBy, onClose, children, panelClassName = '' }) {
     returnTo.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const autofocus = panel.current?.querySelector('[data-autofocus], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled]), a[href]');
+    const autofocus = panel.current?.querySelector('[data-autofocus]') || panel.current?.querySelector(FOCUSABLE);
     autofocus?.focus();
     return () => {
       document.body.style.overflow = previousOverflow;

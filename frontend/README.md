@@ -48,15 +48,19 @@ actual origin. Do not log callback parameters or tokens.
 
 `/dashboard` and `/boards/:boardId` require a session. The dashboard is a
 searchable card grid: each card renders a miniature of the board's real columns
-and cards, with each task strip coloured by its column status, and the round
-`+` opens a focused create dialog. Search matches board names and descriptions.
+and cards, with each task strip coloured by its column status. Search filters
+board names and descriptions as you type. `New board` sits beside the heading
+and opens a focused create dialog. The initial board list shows placeholder
+cards and a labelled loading bar until the API responds.
 The board page keeps its header to an `All boards` link, the board title and
 description, and two icon actions for editing and deleting the board. Columns
-sit side by side with a status dot, count and a `+` add-card control; each card
-keeps only its title, a clamped description and compact priority/due metadata.
-Clicking a card opens one focused editor for its title, optional description,
-LOW/MEDIUM/HIGH priority, date-only due date, column/up/down movement and
-deletion. Board and card actions use the same modal with a focus trap,
+size to their own cards and keep a compact drop area when empty. Drag the grip
+on a card to reorder it or move it to another column. The insertion marker
+shows where it will land; the board uses the saved order returned by the API.
+Click, tap, or press Enter on the grip to use the Move controls without dragging.
+The card title opens the editor for its title, optional description,
+LOW/MEDIUM/HIGH priority, date-only due date, and deletion.
+Board and card actions use the same modal with a focus trap,
 Escape/backdrop closing, scroll lock and focus restoration. Blank
 descriptions/dates are sent as null; dates are never converted to timestamps.
 Successful mutations close their editor/confirmation immediately and reload
@@ -73,7 +77,7 @@ request captures the synchronously maintained auth scope before its first await,
 so a delayed response from a previous account is discarded instead of refreshing
 or signing out the newly active account. Java must independently enforce JWT
 verification and ownership; route guards are not an authorization boundary.
-No drag-and-drop, sharing or production deployment is included.
+Sharing and production deployment are not included.
 
 The Java health endpoint at `/api/health` checks **liveness only**: JSON
 `status: ok` and `service: kanban-api`. It neither authenticates nor checks the
