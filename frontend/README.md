@@ -83,9 +83,9 @@ follow redirects. The public landing page does not call it automatically.
 Routes: `/` (public landing page), `/preview` (redirects to `/`), `/dashboard`,
 `/boards/:boardId`, `/login`, `/register`, `/forgot-password`, `/reset-password`,
 `/auth/reset-password` (alias), `/auth/callback`, and a not-found screen.
-Sign-in, registration and recovery share one centred card on a pale blue field;
-Google sign-in is a visible, disabled placeholder until an OAuth provider is
-configured. Workspace routes update the document title and focus their first
+Sign-in, registration and recovery share a centred card on desktop and an
+unframed form on phones. Login and registration show a disabled Google option
+below the primary action until OAuth is implemented. Workspace routes update the document title and focus their first
 heading. The landing page sets its own title and keeps the skip link as the
 first stop. The skip link targets the main content, not a large interactive
 container.

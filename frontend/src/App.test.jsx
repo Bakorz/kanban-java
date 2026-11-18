@@ -14,14 +14,44 @@ describe('auth lifecycle and routes', () => {
     route('/');
     expect(screen.getByRole('heading', { name: 'Personal Kanban for your tasks', level: 1 })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Preview' })).not.toBeInTheDocument();
-    expect(screen.getAllByRole('link', { name: /Create an account/ }).length).toBeGreaterThan(0);
+    const signupLinks = screen.getAllByRole('link', { name: 'Start Now', exact: true });
+    expect(signupLinks).toHaveLength(4);
+    for (const link of signupLinks) expect(link).toHaveAttribute('href', '/register');
+    expect(screen.queryByRole('link', { name: 'Create an account' })).not.toBeInTheDocument();
     for (const name of ['To Do', 'In Progress', 'Done']) expect(screen.getAllByText(name).length).toBeGreaterThan(0);
   });
-  it.each(['/login', '/register'])('shows a disabled Google placeholder at %s', async (path) => {
+  it.each([
+    ['/login', 'Log in', 'Sign in with Google', 'current-password'],
+    ['/register', 'Create account', 'Sign up with Google', 'new-password'],
+  ])('puts the disabled Google option after the form and reveals passwords at %s', async (path, submitName, googleName, autocomplete) => {
     const { client } = mockAuth(); route(path, client);
-    const google = await screen.findByRole('button', { name: /Sign (in|up) with Google/ });
+    const google = await screen.findByRole('button', { name: googleName, exact: true });
+    const submit = screen.getByRole('button', { name: submitName, exact: true });
     expect(google).toBeDisabled();
-    expect(google).toHaveTextContent('Soon');
+    expect(google).toHaveTextContent(googleName);
+    expect(google).not.toHaveTextContent('Soon');
+    expect(submit.compareDocumentPosition(google) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    const email = screen.getByLabelText('Email (required)');
+    const password = screen.getByLabelText('Password (required)');
+    const reveal = screen.getByRole('button', { name: 'Show password' });
+    expect(email).toHaveAttribute('autocomplete', 'username');
+    expect(password).toHaveAttribute('autocomplete', autocomplete);
+    expect(reveal).toHaveAttribute('aria-controls', password.id);
+    expect(reveal).toHaveAttribute('type', 'button');
+    expect(reveal).toHaveAttribute('aria-pressed', 'false');
+    expect(password).toHaveAttribute('type', 'password');
+
+    fireEvent.change(password, { target: { value: 'test-password' } });
+    fireEvent.click(reveal);
+    expect(password).toHaveAttribute('type', 'text');
+    expect(reveal).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(reveal);
+    expect(password).toHaveAttribute('type', 'password');
+    expect(password).toHaveValue('test-password');
+    expect(reveal).toHaveAttribute('aria-pressed', 'false');
+    expect(client.auth.signInWithPassword).not.toHaveBeenCalled();
+    expect(client.auth.signUp).not.toHaveBeenCalled();
   });
   it.each(['/dashboard', '/boards/private'])('guards %s and gives actionable missing config', async (path) => {
     vi.stubGlobal('fetch', vi.fn()); route(path);

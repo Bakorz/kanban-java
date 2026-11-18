@@ -56,9 +56,8 @@ function Mark() {
 
 function Arrow() {
   return (
-    <svg className="m-arrow" viewBox="0 0 12 12" aria-hidden="true">
-      <path className="m-arrow__stem" d="M1 6h8" />
-      <path className="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5" />
+    <svg className="landing-arrow" viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M3 8h9m-4-4 4 4-4 4" />
     </svg>
   );
 }
@@ -95,7 +94,7 @@ function BoardColumns({ compact = false }) {
 
 function HeroBoard() {
   return (
-    <div className="ui kb-hero ly-piece" aria-hidden="true">
+    <div className="ui kb-hero" aria-hidden="true">
       <div className="kb-hero__bar">
         <span className="kb-mark"><i /><i /><i /></span>
         <span className="kb-hero__name">Kanban</span>
@@ -219,15 +218,12 @@ export function Landing() {
       radius: html.dataset.radius,
       buttons: html.dataset.buttons,
       motion: html.dataset.motion,
-      className: html.className,
     };
 
     html.dataset.type = 'software';
     html.dataset.radius = 'soft';
     html.dataset.buttons = 'solid';
     html.dataset.motion = '';
-    html.classList.add('m-enter');
-    html.classList.remove('m-enter-done');
     body.classList.add('landing-body');
 
     const addLink = (rel, href) => {
@@ -255,7 +251,6 @@ export function Landing() {
       nodes.push(script);
     });
 
-    const timer = window.setTimeout(() => html.classList.add('m-enter-done'), 700);
     document.title = 'Kanban: a personal board for your tasks';
 
     const restore = () => {
@@ -264,18 +259,13 @@ export function Landing() {
       if (document.querySelector('.landing-page')) return;
       nodes.forEach((node) => node.remove());
       body.classList.remove('landing-body');
-      html.className = previous.className;
       if (previous.type === undefined) delete html.dataset.type; else html.dataset.type = previous.type;
       if (previous.radius === undefined) delete html.dataset.radius; else html.dataset.radius = previous.radius;
       if (previous.buttons === undefined) delete html.dataset.buttons; else html.dataset.buttons = previous.buttons;
       if (previous.motion === undefined) delete html.dataset.motion; else html.dataset.motion = previous.motion;
-      html.classList.remove('m-enter', 'm-enter-done');
     };
 
-    return () => {
-      window.clearTimeout(timer);
-      window.setTimeout(restore, 0);
-    };
+    return () => { window.setTimeout(restore, 0); };
   }, []);
 
   return (
@@ -329,7 +319,7 @@ export function Landing() {
           </nav>
           <div className="nav__actions">
             <Link className="nav__link" to="/login">Log in</Link>
-            <Link className="btn btn--primary" to="/register">Create an account</Link>
+            <Link className="btn btn--primary" to="/register">Start Now</Link>
           </div>
           <button className="nav__toggle" type="button" aria-expanded="false" aria-label="Menu">
             <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M2 5h14M2 13h14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
@@ -338,14 +328,14 @@ export function Landing() {
       </header>
 
       <main id="top">
-        <section className="hero hero--centred" data-enter aria-labelledby="hero-h">
+        <section className="hero hero--centred" aria-labelledby="hero-h">
           <div className="wrap">
             <div className="hero-text">
               <div className="hero__c">
                 <h1 id="hero-h">Personal Kanban for your tasks</h1>
                 <p className="hero__lead">3 columns, cards with a priority and a due date, and one clear next step. Built for one person, not a team.</p>
                 <div className="btn-row">
-                  <Link className="btn btn--primary" to="/register">Create an account<Arrow /></Link>
+                  <Link className="btn btn--primary" to="/register">Start Now<Arrow /></Link>
                   <Link className="btn btn--secondary" to="/login">Log in</Link>
                 </div>
               </div>
@@ -364,7 +354,7 @@ export function Landing() {
               </div>
               <div className="span-6 start-7">
                 <p className="t-lead">Every board has To Do, In Progress and Done. The count beside each column shows where the work sits, and every card keeps its priority and due date.</p>
-                <p className="board-link"><a className="link" href="#steps">See how moving works</a></p>
+                <p className="section-link"><a href="#steps">See how moving works<Arrow /></a></p>
               </div>
             </div>
             <div className="app-frame">
@@ -385,7 +375,7 @@ export function Landing() {
                 ['2', 'Cards on the board', 'Each card takes a title, a note, a priority and a due date.', 'card'],
                 ['3', 'Moving cards on the board', 'Send a card to the next column, or move it up and down. No dragging.', 'move'],
               ].map(([num, title, line, panel]) => (
-                <article className="card card--row card--open span-4" key={title}>
+                <article className="card card--row card--open m-nolift span-4" key={title}>
                   <span className="step-num">{num}</span>
                   <h3>{title}</h3>
                   <p>{line}</p>
@@ -393,15 +383,15 @@ export function Landing() {
                 </article>
               ))}
             </div>
-            <p className="steps__link"><a className="link" href="#board">See the board</a></p>
+            <p className="section-link"><a href="#board">See the board<Arrow /></a></p>
           </div>
         </section>
 
-        <section className="section ground-inverse" id="privacy" data-moment="word-highlight" aria-labelledby="privacy-h">
+        <section className="section ground-inverse" id="privacy" aria-labelledby="privacy-h">
           <div className="wrap">
             <div className="grid grid--top privacy">
               <div className="span-5">
-                <h2 id="privacy-h" className="mo-wh__text">Only your account can open your boards. No one else sees them.</h2>
+                <h2 id="privacy-h">Only your account can open your boards. No one else sees them.</h2>
                 <p className="t-lead">Every request carries the signed-in account, and the Java API checks the board&rsquo;s owner before it reads or writes. A board that is not yours returns the same 404 as one that does not exist.</p>
               </div>
               <div className="span-6 start-7">
@@ -467,9 +457,9 @@ export function Landing() {
             <div className="section-head--split">
               <div>
                 <h2 id="close-h">Start with one board.</h2>
-                <p className="t-lead">Create an account, name a board and add the first card.</p>
+                <p className="t-lead">Name a board and add your first card.</p>
               </div>
-              <Link className="btn btn--primary" to="/register">Create an account<Arrow /></Link>
+              <Link className="btn btn--primary" to="/register">Start Now<Arrow /></Link>
             </div>
             <p className="close__word" aria-hidden="true">Kanban</p>
           </div>
@@ -491,7 +481,7 @@ export function Landing() {
               <div className="span-3 footer__col">
                 <h3>Account</h3>
                 <ul>
-                  <li><Link to="/register">Create an account</Link></li>
+                  <li><Link to="/register">Start Now</Link></li>
                   <li><Link to="/login">Log in</Link></li>
                 </ul>
               </div>

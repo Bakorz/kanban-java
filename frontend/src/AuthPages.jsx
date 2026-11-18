@@ -16,12 +16,18 @@ const leads = {
 const submitLabels = { login: 'Log in', register: 'Create account', forgot: 'Send recovery link', reset: 'Update password' };
 const pendingLabels = { login: 'Signing in…', register: 'Creating your account…', forgot: 'Sending the recovery link…', reset: 'Updating your password…' };
 
-function BrandMark() {
-  return <span className="auth-mark" aria-hidden="true"><i /><i /><i /></span>;
-}
-
 function Arrow() {
   return <svg className="auth-arrow" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 6h8M4.5 2.5 8 6l-3.5 3.5" /></svg>;
+}
+
+function FieldIcon({ name, slashed }) {
+  return <svg className="auth-icon" viewBox="0 0 24 24" aria-hidden="true">
+    {name === 'mail' && <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></>}
+    {name === 'lock' && <><rect x="5" y="10" width="14" height="11" rx="2" /><path d="M8 10V7a4 4 0 1 1 8 0v3m-4 5v2" /></>}
+    {name === 'eye' && (slashed
+      ? <path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.5 5.4A9 9 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3 3.8M6.2 6.9A17 17 0 0 0 2 12s3.5 7 10 7a9 9 0 0 0 4.2-1" />
+      : <><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="2.5" /></>)}
+  </svg>;
 }
 
 function GoogleMark() {
@@ -45,10 +51,6 @@ function AuthFrame({ title, documentTitle = title, lead, children }) {
   return <main className="auth-main">
     <div className="auth-stage">
       <section className="auth-card" aria-labelledby="content">
-        <div className="auth-card__top">
-          <span className="auth-card__brand"><BrandMark />Kanban</span>
-          <span className="auth-card__eyebrow">Personal boards</span>
-        </div>
         <h1 id="content" ref={heading} tabIndex={-1}>{title}</h1>
         {lead && <p className="auth-lead">{lead}</p>}
         {children}
@@ -58,14 +60,10 @@ function AuthFrame({ title, documentTitle = title, lead, children }) {
 }
 
 function GoogleButton({ kind }) {
-  return <>
-    <button className="auth-google" type="button" disabled>
-      <GoogleMark />
-      <span>{kind === 'register' ? 'Sign up with Google' : 'Sign in with Google'}</span>
-      <span className="auth-google__soon">Soon</span>
-    </button>
-    <div className="auth-divider"><span>or continue with email</span></div>
-  </>;
+  return <button className="auth-google" type="button" disabled>
+    <GoogleMark />
+    <span>{kind === 'register' ? 'Sign up with Google' : 'Sign in with Google'}</span>
+  </button>;
 }
 
 function AuthSwitch({ kind, message, session }) {
@@ -84,10 +82,12 @@ export function AuthPage({ kind }) {
   const ids = useId();
   const emailId = `${ids}-email`;
   const passwordId = `${ids}-password`;
+  const passwordHintId = `${ids}-password-hint`;
   const [message, setMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const next = safeRedirect(new URLSearchParams(location.search).get('next'));
   const title = titles[kind];
+  const hasCredentials = kind === 'login' || kind === 'register';
   if (kind === 'callback') return <Callback next={next} />;
   if (auth.loading) return <AuthFrame title={title} documentTitle={documentTitles[kind]}><div className="auth-loading"><progress aria-label="Loading authentication" /><p>Checking your session…</p></div></AuthFrame>;
   if (kind === 'login' && auth.session && !auth.recovery) return <Navigate to={next} replace />;
@@ -126,25 +126,34 @@ export function AuthPage({ kind }) {
     {!auth.client ? <p className="notice auth-notice">{configurationNotice}</p> : <>
       {auth.error && <ErrorMessage error={auth.error} />}
       {!allowedReset && !message ? <p className="notice auth-notice">Open a valid password recovery link from your email. A normal signed-in session cannot reset your password here.</p> : !message && <form method="post" onSubmit={submit} aria-label={formLabels[kind]} className="auth-form">
-        {(kind === 'login' || kind === 'register') && <GoogleButton kind={kind} />}
         {kind !== 'reset' && <div className="field auth-field">
           <label htmlFor={emailId}>Email (required)</label>
-          <input id={emailId} name="email" type="email" autoComplete="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} required maxLength={254} disabled={op.pending} />
+          <div className="auth-field__control">
+            <FieldIcon name="mail" />
+            <input id={emailId} name="email" type="email" autoComplete={hasCredentials ? 'username' : 'email'} enterKeyHint={hasCredentials ? 'next' : 'send'} autoCapitalize="none" autoCorrect="off" spellCheck={false} required maxLength={254} disabled={op.pending} />
+          </div>
         </div>}
         {kind !== 'forgot' && <div className="field auth-field">
           <div className="auth-field__head">
             <label htmlFor={passwordId}>{kind === 'reset' ? 'New password (required)' : 'Password (required)'}</label>
             {kind === 'login' && <Link className="auth-field__link" to="/forgot-password">Forgot password?</Link>}
           </div>
-          <div className="auth-field__control">
-            <input id={passwordId} name="password" aria-describedby={kind === 'login' ? undefined : 'password-hint'} type={showPassword ? 'text' : 'password'} autoComplete={kind === 'login' ? 'current-password' : 'new-password'} minLength={kind === 'login' ? undefined : 8} required disabled={op.pending} />
-            <button className="auth-reveal" type="button" aria-pressed={showPassword} aria-controls={passwordId} onClick={() => setShowPassword(!showPassword)}>{showPassword ? 'Hide' : 'Show'}</button>
+          <div className="auth-field__control auth-field__control--password">
+            <FieldIcon name="lock" />
+            <input id={passwordId} name="password" aria-describedby={kind === 'login' ? undefined : passwordHintId} type={showPassword ? 'text' : 'password'} autoComplete={kind === 'login' ? 'current-password' : 'new-password'} enterKeyHint="done" autoCapitalize="none" autoCorrect="off" spellCheck={false} minLength={kind === 'login' ? undefined : 8} required disabled={op.pending} />
+            <button className="auth-reveal" type="button" aria-label="Show password" aria-pressed={showPassword} aria-controls={passwordId} disabled={op.pending} onClick={() => setShowPassword((visible) => !visible)}>
+              <FieldIcon name="eye" slashed={showPassword} />
+            </button>
           </div>
-          {kind !== 'login' && <p id="password-hint" className="auth-hint">Use at least 8 characters.</p>}
+          {kind !== 'login' && <p id={passwordHintId} className="auth-hint">Use at least 8 characters.</p>}
         </div>}
         <ErrorMessage error={op.error} />
         <button className="auth-submit" type="submit" disabled={op.pending}>{op.pending ? 'Please wait…' : submitLabels[kind]}{!op.pending && <Arrow />}</button>
-        <p className="auth-form__status" role="status" aria-live="polite">{op.pending ? pendingLabels[kind] : ''}</p>
+        <p className="auth-form__status" role="status">{op.pending ? pendingLabels[kind] : ''}</p>
+        {hasCredentials && <>
+          <div className="auth-divider"><span>or</span></div>
+          <GoogleButton kind={kind} />
+        </>}
       </form>}
       {message && <p className="notice auth-notice" role="status">{message}</p>}
     </>}

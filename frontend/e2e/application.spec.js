@@ -24,6 +24,48 @@ async function login(page) {
   await expect(page.getByRole('heading', { name: 'My boards', exact: true })).toBeVisible();
 }
 
+test('auth actions are aligned and the password eye works without submitting', async ({ page }, testInfo) => {
+  test.skip(realApi, 'Requires the configured auth form from the SDK fixture.');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/login');
+
+  const card = page.getByRole('region', { name: 'Log in to Kanban' });
+  const mobile = testInfo.project.name === 'mobile';
+  await expect(card).toHaveCSS('animation-name', 'none');
+  await expect(card).toHaveCSS('border-top-width', mobile ? '0px' : '1px');
+  await expect(card).toHaveCSS('background-image', mobile ? 'none' : /linear-gradient/);
+  if (mobile) await expect(card).toHaveCSS('box-shadow', 'none');
+
+  const submit = page.getByRole('button', { name: 'Log in', exact: true });
+  const google = page.getByRole('button', { name: 'Sign in with Google', exact: true });
+  await expect(google).toBeDisabled();
+  const mainAction = await submit.boundingBox();
+  const googleAction = await google.boundingBox();
+  const label = await google.getByText('Sign in with Google', { exact: true }).boundingBox();
+  expect(googleAction.y).toBeGreaterThan(mainAction.y + mainAction.height);
+  expect(Math.abs(label.x + label.width / 2 - (googleAction.x + googleAction.width / 2))).toBeLessThan(1);
+
+  const password = page.getByLabel('Password (required)', { exact: true });
+  const reveal = page.getByRole('button', { name: 'Show password' });
+  await password.fill('fixture-password');
+  await expect(password).toHaveAttribute('type', 'password');
+  if (mobile) {
+    await reveal.tap();
+  } else {
+    await page.keyboard.press('Tab');
+    await expect(reveal).toBeFocused();
+    await expect(reveal).toHaveCSS('outline-style', 'solid');
+    await page.keyboard.press('Space');
+  }
+  await expect(reveal).toHaveAttribute('aria-pressed', 'true');
+  await expect(password).toHaveAttribute('type', 'text');
+  await reveal.press('Enter');
+  await expect(reveal).toHaveAttribute('aria-pressed', 'false');
+  await expect(password).toHaveAttribute('type', 'password');
+  await expect(password).toHaveValue('fixture-password');
+  await expect(page).toHaveURL(/\/login$/);
+});
+
 test('SDK login board/card CRUD keyboard moves null clearing and logout', async ({ page }, testInfo) => {
   test.skip(realApi, 'Explicit SDK/API mock integration fixture only.');
   await authRoutes(page);
