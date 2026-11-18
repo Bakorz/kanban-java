@@ -183,7 +183,9 @@ describe('board and card operations', () => {
     ] })));
     route('/boards/b1', client);
     await screen.findByRole('heading', { name: 'Work', level: 1 });
-    const cardButton = screen.getByRole('button', { name: 'Edit card First task' });
+    const cardHeading = screen.getByRole('heading', { level: 3, name: 'First task', exact: true });
+    const cardButton = screen.getByRole('button', { name: 'Edit card First task', exact: true });
+    expect(cardHeading).toContainElement(cardButton);
     cardButton.focus(); fireEvent.click(cardButton);
     expect(await screen.findByRole('dialog', { name: 'Edit card' })).toBeInTheDocument();
     expect(screen.getByLabelText('Title (required)')).toHaveFocus();

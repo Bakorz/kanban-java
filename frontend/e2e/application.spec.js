@@ -218,7 +218,7 @@ test('board lanes size to their cards and drops persist the exact position', asy
   }
 
   await page.reload();
-  await expect(done.getByRole('heading', { name: 'First task' })).toBeVisible();
+  await expect(done.getByRole('heading', { level: 3, name: 'First task', exact: true })).toBeVisible();
 });
 
 test('SDK login board/card CRUD keyboard moves null clearing and logout', async ({ page }, testInfo) => {

@@ -50,7 +50,7 @@ test('real Java and PostgreSQL board/card lifecycle through browser', async ({ p
   await page.keyboard.press('Enter');
   await expect(page.getByRole('status', { name: 'Board activity' })).toHaveText('Card moved.');
   await page.reload();
-  const inProgress = page.locator('.column').filter({ has: page.getByRole('heading', { name: /^In Progress/ }) });
+  const inProgress = page.getByRole('region', { name: 'In Progress', exact: true });
   await expect(inProgress.getByRole('heading', { name: 'Persisted task', exact: true })).toBeVisible();
   await expect(page.locator('body')).toHaveJSProperty('scrollWidth', await page.locator('body').evaluate((el) => el.clientWidth));
   await page.screenshot({ path: `.tools/screenshots/real-workspace-${testInfo.project.name}.png`, fullPage: true });

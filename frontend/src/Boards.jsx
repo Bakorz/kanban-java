@@ -322,6 +322,7 @@ function boardCollision({ active, pointerCoordinates: point, droppableContainers
 }
 
 function TaskCard({ card, column, index, busy, onOpen, dropId }) {
+  const titleId = useId();
   const priority = priorityName(card.priority);
   const data = { columnId: column.id, columnName: column.name, index, title: card.title };
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging, transform } = useDraggable({ id: card.id, data, disabled: busy });
@@ -329,7 +330,11 @@ function TaskCard({ card, column, index, busy, onOpen, dropId }) {
   const drop = useDroppable({ id: slotId, data: { ...data, type: 'card', cardId: card.id } });
   return <li className="task-list__item" ref={drop.setNodeRef} data-drop={dropId === slotId ? 'before' : undefined} data-dragging={isDragging || undefined}>
     <article className="task-card" ref={setNodeRef} style={isDragging && transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined}>
-      <h3 className="task-card__title"><button type="button" className="task-card__edit" aria-label={`Edit card ${card.title}`} disabled={busy} onClick={() => onOpen()}>{card.title}</button></h3>
+      <h3 className="task-card__title" aria-labelledby={titleId}>
+        <button type="button" className="task-card__edit" aria-label={`Edit card ${card.title}`} disabled={busy} onClick={() => onOpen()}>
+          <span id={titleId}>{card.title}</span>
+        </button>
+      </h3>
       <button type="button" id={`move-card-${card.id}`} className="task-card__grip" ref={setActivatorNodeRef} {...listeners}
         aria-label={`Move card ${card.title}`} aria-describedby={attributes['aria-describedby']} aria-haspopup="dialog"
         title="Drag to move, or open move controls" disabled={busy} onClick={() => onOpen(true)}><GripIcon /></button>
