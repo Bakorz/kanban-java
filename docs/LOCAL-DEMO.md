@@ -6,10 +6,11 @@ project; public settings last checked still indicated confirmation required, so
 save/recheck that setting before live signup. Confirmation OFF does not verify
 email ownership. Password recovery still needs mail delivery.
 
-**Current checkpoint:** Auth/CRUD code is implemented and local fixture-based
-verification is in progress. Real Java/PostgreSQL browser CRUD has passed, but
-actual Supabase sign-in, runtime TLS connectivity, and email recovery remain
-unverified. These instructions are not proof of a live end-to-end demonstration.
+**Current checkpoint:** Auth/CRUD code is implemented and locally verified,
+including real browser CRUD against Java and isolated PostgreSQL. Actual Supabase
+sign-in, runtime TLS connectivity, migrations, and email recovery remain unverified
+until the owner completes the steps below. These instructions are not proof of a
+live end-to-end demonstration.
 
 ## 1. Install tools
 
