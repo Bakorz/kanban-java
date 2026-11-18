@@ -51,16 +51,20 @@ opened, renamed and deleted (with a cascade warning). Cards support title,
 optional description, LOW/MEDIUM/HIGH priority, date-only due date, editing,
 deleting and keyboard-usable column/up/down movement. Blank descriptions/dates
 are sent as null; dates are never converted to timestamps. Successful mutations
-reload canonical API state. Native forms supply labels, autocomplete, length
-constraints, pending locks and structured server field errors. Mobile columns
-stack vertically rather than requiring horizontal page scrolling.
+close their editor/confirmation immediately and reload canonical API state; if that
+reload fails, the UI says the change was saved and offers a reload-only retry, so a
+committed create cannot be replayed as a duplicate. Native forms supply labels,
+autocomplete, length constraints, pending locks and structured server field errors.
+Mobile columns stack vertically rather than requiring horizontal page scrolling.
 
 Private requests go only to same-origin `/api`, use SDK bearer tokens, omit
 cookies, reject redirects, disable caches and have finite timeouts. GET after a
-401 may refresh and retry once; mutations are never automatically retried. Java
-must independently enforce JWT verification and ownership; route guards are not
-an authorization boundary. No drag-and-drop, sharing or production deployment is
-included.
+401 may refresh and retry once; mutations are never automatically retried. Each
+request captures the synchronously maintained auth scope before its first await,
+so a delayed response from a previous account is discarded instead of refreshing
+or signing out the newly active account. Java must independently enforce JWT
+verification and ownership; route guards are not an authorization boundary.
+No drag-and-drop, sharing or production deployment is included.
 
 The health button checks **liveness only**: JSON `status: ok` and
 `service: kanban-api`. It neither authenticates nor checks the database.
