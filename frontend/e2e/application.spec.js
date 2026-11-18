@@ -47,7 +47,7 @@ test('SDK login board/card CRUD keyboard moves null clearing and logout', async 
     return route.fulfill({ status: 500, json: { error: { message: 'Unhandled test fixture request' } } });
   });
   await login(page);
-  await expect(page.getByText('No boards yet.', { exact: false })).toBeVisible();
+  await expect(page.getByText('No boards yet', { exact: false })).toBeVisible();
   await page.getByRole('button', { name: 'New board' }).click();
   await page.getByLabel('Board name (required)').fill('Personal work');
   await page.getByLabel(/Description \(optional/).fill('A practical weekly board');
@@ -90,7 +90,7 @@ test('SDK login board/card CRUD keyboard moves null clearing and logout', async 
   await page.getByRole('button', { name: 'Delete board', exact: true }).click();
   await page.getByRole('button', { name: 'Confirm delete' }).click();
   await expect(page.getByRole('heading', { name: 'My boards', level: 1 })).toBeVisible();
-  await expect(page.getByText('No boards yet.', { exact: false })).toBeVisible();
+  await expect(page.getByText('No boards yet', { exact: false })).toBeVisible();
   await page.getByRole('button', { name: 'Log out', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Log in to Kanban', level: 1 })).toBeVisible();
 });

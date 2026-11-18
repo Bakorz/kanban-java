@@ -1,11 +1,11 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
-export function Page({ title, children }) {
+export function Page({ title, children, className }) {
   const heading = useRef(null);
   const { pathname } = useLocation();
   useEffect(() => { document.title = `${title} | Kanban`; heading.current?.focus(); }, [title, pathname]);
-  return <main><h1 id="content" ref={heading} tabIndex={-1}>{title}</h1>{children}</main>;
+  return <main className={className}><h1 id="content" ref={heading} tabIndex={-1}>{title}</h1>{children}</main>;
 }
 
 export function ErrorMessage({ error }) {

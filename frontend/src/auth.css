@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap");
-
 /* Auth screens: one centred card on the pale blue field, matching the landing brand. */
 
 body.auth-body { background: #f4f8ff; }

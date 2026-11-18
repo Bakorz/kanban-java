@@ -66,7 +66,7 @@ function Shell() {
   const { pathname } = useLocation();
   const onAuth = AUTH_ROUTES.has(pathname);
   return <>
-    <style>{'main h1[tabindex="-1"]:focus{outline:none;text-decoration:underline;text-decoration-color:#1d4ed8;text-decoration-thickness:2px;text-underline-offset:8px}'}</style>
+    <style>{'main h1[tabindex="-1"]:focus{outline:none}body.auth-body main h1[tabindex="-1"]:focus{text-decoration:underline;text-decoration-color:#1d4ed8;text-decoration-thickness:2px;text-underline-offset:8px}'}</style>
     <a className="skip-link" href="#content">Skip to main content</a>
     <header className={`app-header${onAuth ? ' app-header--auth' : ''}`}><Link className="brand" to="/"><BrandMark />Kanban</Link>
       <nav aria-label={onAuth ? 'Account' : 'Primary'}>{onAuth ? <Link className="app-header__back" to="/">Back to home</Link> : <><NavLink to="/" end>Home</NavLink><NavLink to="/dashboard">My boards</NavLink>

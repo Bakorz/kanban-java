@@ -99,6 +99,47 @@ describe('auth lifecycle and routes', () => {
 });
 
 describe('board and card operations', () => {
+  it('searches board cards and opens the create form over the dashboard', async () => {
+    const { client } = mockAuth(testSession);
+    vi.stubGlobal('fetch', vi.fn(async (path) => {
+      if (path === '/api/boards') return reply({ boards: [
+        { id: 'roadmap', name: 'Roadmap', description: 'Planning the next release' },
+        { id: 'hiring', name: 'Hiring', description: 'Interviews and offers' },
+      ] });
+      if (path === '/api/boards/roadmap') return reply({ board: { id: 'roadmap', name: 'Roadmap' }, columns: [
+        { id: 'todo', name: 'To Do', cards: [{ id: 't1', title: 'Ship the search' }] },
+        { id: 'doing', name: 'In Progress', cards: [] },
+        { id: 'done', name: 'Done', cards: [] },
+      ] });
+      if (path === '/api/boards/hiring') return reply({ board: { id: 'hiring', name: 'Hiring' }, columns: [] });
+      throw new Error(`Unexpected path ${path}`);
+    }));
+    route('/dashboard', client);
+    const roadmapLink = await screen.findByRole('link', { name: 'Roadmap' });
+    expect(await screen.findByText('1 task')).toBeInTheDocument();
+    expect(roadmapLink).toHaveAccessibleDescription('1 task: 1 to do.');
+
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search boards' }), { target: { value: 'hir' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Roadmap' })).not.toBeInTheDocument());
+    expect(screen.getByRole('heading', { name: 'Hiring' })).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('1 board found.');
+
+    const newBoard = screen.getByRole('button', { name: 'New board' });
+    fireEvent.click(newBoard);
+    expect(await screen.findByRole('dialog', { name: 'Create board' })).toBeInTheDocument();
+    const nameField = screen.getByLabelText('Board name (required)');
+    const cancel = screen.getByRole('button', { name: 'Cancel' });
+    expect(nameField).toHaveFocus();
+    fireEvent.keyDown(nameField, { key: 'Tab', shiftKey: true });
+    expect(cancel).toHaveFocus();
+    fireEvent.keyDown(cancel, { key: 'Tab' });
+    expect(nameField).toHaveFocus();
+    fireEvent.click(cancel);
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(newBoard).toHaveFocus();
+    expect(document.body.style.overflow).toBe('');
+  });
   it('locks other controls while saving and displays server field errors without a fake save', async () => {
     const { client } = mockAuth(testSession); let resolve;
     vi.stubGlobal('fetch', vi.fn(async (_path, options) => options.method === 'GET' ? reply({ board: { id: 'b1', name: 'Work' }, columns: [{ id: 'todo', name: 'To Do', cards: [] }] }) : new Promise((r) => { resolve = r; })));

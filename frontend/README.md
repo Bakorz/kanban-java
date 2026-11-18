@@ -46,8 +46,11 @@ recovery URL, request a fresh recovery link. Configure the provider's allowed
 redirect URLs for `/auth/callback` and `/reset-password` on the application's
 actual origin. Do not log callback parameters or tokens.
 
-`/dashboard` and `/boards/:boardId` require a session. Boards can be created,
-opened, renamed and deleted (with a cascade warning). Cards support title,
+`/dashboard` and `/boards/:boardId` require a session. The dashboard is a
+searchable card grid: each card renders a miniature of the board's real columns
+and cards, with each task strip coloured by its column status, and the round
+`+` opens a focused create dialog. Search matches board names and descriptions.
+Board editing and deletion remain inside the board; cards support title,
 optional description, LOW/MEDIUM/HIGH priority, date-only due date, editing,
 deleting and keyboard-usable column/up/down movement. Blank descriptions/dates
 are sent as null; dates are never converted to timestamps. Successful mutations
