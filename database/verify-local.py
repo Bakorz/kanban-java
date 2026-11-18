@@ -29,16 +29,19 @@ try:
     container_id = result.stdout.strip()
     if len(container_id) != 64 or not all(c in "0123456789abcdef" for c in container_id):
         raise RuntimeError("Unexpected container ID; refusing further operations")
-    deadline = time.monotonic() + 45
+    deadline = time.monotonic() + 60
     while True:
+        # Query the actual target database: pg_isready can accept connections on the
+        # image's temporary startup server before this database has been created.
         ready = subprocess.run(
-            ["docker", "exec", container_id, "pg_isready", "-U", "postgres", "-d", "kanban_schema_test"],
+            ["docker", "exec", container_id, "psql", "-U", "postgres", "-d", "kanban_schema_test",
+             "-v", "ON_ERROR_STOP=1", "-c", "SELECT 1"],
             capture_output=True, timeout=10,
         )
         if ready.returncode == 0:
             break
         if time.monotonic() >= deadline:
-            raise RuntimeError("Disposable database did not become ready within 45 seconds")
+            raise RuntimeError("Disposable database did not accept target-database queries within 60 seconds")
         time.sleep(0.25)
     docker(
         "exec", container_id, "psql", "-U", "postgres", "-d", "kanban_schema_test",
