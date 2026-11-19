@@ -1,8 +1,9 @@
+import { DndContext, PointerSensor, useDraggable, useDroppable, useSensor, useSensors } from '@dnd-kit/core';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { createApi } from './api.js';
 import { useAuth } from './Auth.jsx';
-import { ErrorMessage, Field, Modal, Page, useOperation } from './ui.jsx';
+import { ErrorMessage, Field, Modal, Page, WorkspaceLoading, useOperation } from './ui.jsx';
 
 const RELOAD_WARNING = 'The change was saved, but the latest board could not be loaded. Use Try again to reload; do not repeat the change.';
 
@@ -28,10 +29,10 @@ function useResource(path) {
     finally { if (sequence.current === current) setLoading(false); }
   }, [api, path]);
   useEffect(() => { void load().catch(() => {}); return () => { sequence.current++; }; }, [load]);
-  return { api, data, error, loading, load };
+  return { api, data, error, loading, load, setData };
 }
 function ResourceState({ resource, children, loading }) {
-  if (resource.loading && !resource.data) return loading || <progress aria-label="Loading workspace" />;
+  if (resource.loading && !resource.data) return loading;
   if (resource.error) return <><ErrorMessage error={resource.error} /><button type="button" onClick={() => { void resource.load().catch(() => {}); }}>Try again</button></>;
   return children;
 }
@@ -176,24 +177,49 @@ function BoardCard({ board, preview }) {
   </li>;
 }
 
+function DashboardLoading() {
+  return <div className="dash-loading">
+    <div className="board-grid board-grid--loading" aria-hidden="true">
+      {[0, 1, 2].map((index) => <div className="board-card" key={index}>
+        <div className="board-card__preview"><PreviewSkeleton /></div>
+        <div className="board-card__body">
+          <span className="bp-skel dash-skel--title" />
+          <span className="bp-skel dash-skel--meta" />
+        </div>
+      </div>)}
+    </div>
+    <WorkspaceLoading label="Loading your boards…" />
+  </div>;
+}
+
 export function Dashboard() {
   const resource = useResource('/api/boards');
   const boards = resource.data?.boards;
   const previews = useBoardPreviews(boards);
-  const [searchDraft, setSearchDraft] = useState('');
-  const [query, setQuery] = useState('');
+  const [search, setSearch] = useState('');
+  const [resultMessage, setResultMessage] = useState('');
   const [creating, setCreating] = useState(false);
   const [formBusy, setFormBusy] = useState(false);
   const newBoardButton = useRef(null);
   const wasCreating = useRef(false);
   const searchId = useId();
+  const query = search.trim();
   const filteredBoards = useMemo(() => {
     const list = boards || EMPTY_BOARDS;
     const needle = query.toLocaleLowerCase();
     if (!needle) return list;
     return list.filter((board) => `${board.name} ${board.description || ''}`.toLocaleLowerCase().includes(needle));
   }, [boards, query]);
-  const resultMessage = query ? `${filteredBoards.length} board${filteredBoards.length === 1 ? '' : 's'} found.` : '';
+
+  useEffect(() => {
+    if (!query || !boards?.length) {
+      setResultMessage('');
+      return;
+    }
+    const count = filteredBoards.length;
+    const timer = setTimeout(() => setResultMessage(`${count} board${count === 1 ? '' : 's'} found.`), 250);
+    return () => clearTimeout(timer);
+  }, [query, boards, filteredBoards.length]);
 
   useEffect(() => {
     if (wasCreating.current && !creating) newBoardButton.current?.focus();
@@ -205,25 +231,21 @@ export function Dashboard() {
     setCreating(false);
   }
 
-  return <Page title="My boards" className="dash-main">
-    <div className="dash-toolbar">
-      <form className="dash-search" role="search" onSubmit={(event) => { event.preventDefault(); setQuery(searchDraft.trim()); }}>
-        <label className="sr-only" htmlFor={searchId}>Search boards</label>
-        <div className="dash-search__field">
-          <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.6" cy="8.6" r="5.6" /><path d="m13 13 4.2 4.2" /></svg>
-          <input id={searchId} name="q" type="search" value={searchDraft} onChange={(event) => setSearchDraft(event.target.value)} placeholder="Search boards" autoComplete="off" />
-        </div>
-        <button type="submit" className="dash-search__submit">Search</button>
-      </form>
-      <button ref={newBoardButton} type="button" className="dash-create" aria-label="New board" title="New board" onClick={() => setCreating(true)}>
-        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12" /></svg>
-      </button>
+  return <Page title="My boards" className="dash-main" actions={
+    <button ref={newBoardButton} type="button" className="dash-create primary" onClick={() => setCreating(true)}>
+      <PlusIcon />New board
+    </button>
+  }>
+    <div className="dash-search" role="search">
+      <label className="sr-only" htmlFor={searchId}>Search boards</label>
+      <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.6" cy="8.6" r="5.6" /><path d="m13 13 4.2 4.2" /></svg>
+      <input id={searchId} name="q" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search boards" autoComplete="off" />
     </div>
-    <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">{resultMessage}</p>
-    <div className="dash-results">
-      <ResourceState resource={resource}>
+    <p className="sr-only" role="status" aria-atomic="true">{resultMessage}</p>
+    <div className="dash-results" data-ready={Boolean(resource.data)}>
+      <ResourceState resource={resource} loading={<DashboardLoading />}>
         {boards?.length === 0
-          ? <div className="dash-empty"><span className="dash-empty__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5" /><path d="M9 4v16M15 4v16" /></svg></span><h2>No boards yet</h2><p>Use the + button to create your first board.</p></div>
+          ? <div className="dash-empty"><span className="dash-empty__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5" /><path d="M9 4v16M15 4v16" /></svg></span><h2>No boards yet</h2><p>Use New board to create your first board.</p></div>
           : filteredBoards.length === 0
             ? <div className="dash-empty"><span className="dash-empty__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m15.5 15.5 5 5" /></svg></span><h2>No boards match</h2><p>Nothing matches “{query}”. Try another search.</p></div>
             : <ul className="board-grid" role="list">{filteredBoards.map((board) => <BoardCard board={board} preview={previews[board.id]} key={board.id} />)}</ul>}
@@ -233,8 +255,7 @@ export function Dashboard() {
       <BoardForm headingId="dash-create-board-title" onBusy={setFormBusy} onCancel={closeCreate} onSave={async (payload) => {
         await resource.api('/api/boards', { method: 'POST', body: payload });
         setCreating(false);
-        setSearchDraft('');
-        setQuery('');
+        setSearch('');
         await resource.load().catch(() => {}); // The board exists now; retry only the list, never the create.
       }} />
     </Modal>}
@@ -261,56 +282,132 @@ function ArrowDownIcon() {
   return <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3.5v9M4.5 9 8 12.5 11.5 9" /></svg>;
 }
 
-function ArrowRightIcon() {
-  return <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3 5 5-5 5" /></svg>;
+function GripIcon() {
+  return <svg viewBox="0 0 20 20" aria-hidden="true">{[5, 10, 15].map((y) => <g key={y}><circle cx="7" cy={y} r="1.25" /><circle cx="13" cy={y} r="1.25" /></g>)}</svg>;
 }
 
 function BoardSkeleton() {
   return <div className="board-columns board-columns--loading" role="status" aria-label="Loading board">
-    {[0, 1, 2].map((column) => <div className="board-column board-column--skeleton" key={column} aria-hidden="true">
+    {[3, 2, 1].map((column) => <div className="board-column board-column--skeleton" key={column} aria-hidden="true">
       <div className="board-column__head"><span className="board-skel board-skel--dot" /><span className="board-skel board-skel--title" /><span className="board-skel board-skel--add" /></div>
-      <div className="board-skeleton__cards">{[0, 1, 2].map((card) => <span className={`board-skel board-skel--card${card === 2 ? ' board-skel--short' : ''}`} key={card} />)}</div>
+      <div className="board-skeleton__cards">{Array.from({ length: column }, (_, card) => <span className={`board-skel board-skel--card${card === column - 1 ? ' board-skel--short' : ''}`} key={card} />)}</div>
     </div>)}
   </div>;
 }
 
-function TaskCard({ card, busy, onOpen }) {
-  const priority = priorityName(card.priority);
-  return <article className="task-card">
-    <button type="button" className="task-card__hit" aria-label={`Edit card ${card.title}`} disabled={busy} onClick={onOpen} />
-    <h3 className="task-card__title">{card.title}</h3>
-    {card.description && <p className="task-card__desc">{card.description}</p>}
-    <p className="task-card__meta">
-      <span className={`task-card__priority task-card__priority--${priority.toLowerCase()}`}>{PRIORITY_LABELS[priority]}</span>
-      {card.dueDate && <time dateTime={card.dueDate}>Due {dueDateLabel(card.dueDate)}</time>}
-      <span className="task-card__chevron"><ArrowRightIcon /></span>
-    </p>
-  </article>;
+function dropPosition(source, target) {
+  return target.index - Number(source.columnId === target.columnId && source.index < target.index);
 }
 
-function BoardColumn({ column, index, busy, onAdd, onEdit }) {
+// Pick a lane only if the pointer is inside its natural-height bounds. Within
+// the lane, pass the midpoint of a card to insert after it. The source never
+// leaves the flow during a drag, so these measurements don't shift around.
+function boardCollision({ active, pointerCoordinates: point, droppableContainers, droppableRects }) {
+  if (!point) return [];
+  const inside = (rect) => rect && point.x >= rect.left && point.x <= rect.right && point.y >= rect.top && point.y <= rect.bottom;
+  const lane = droppableContainers.find(({ id, data }) => data.current?.type === 'lane' && inside(droppableRects.get(id)));
+  if (!lane) return [];
+  let target;
+  let firstIndex = Infinity;
+  for (const candidate of droppableContainers) {
+    const card = candidate.data.current;
+    const rect = droppableRects.get(candidate.id);
+    if (card?.type !== 'card' || card.columnId !== lane.data.current.columnId || card.cardId === active.id || !rect) continue;
+    if (point.y < (rect.top + rect.bottom) / 2 && card.index < firstIndex) {
+      target = candidate;
+      firstIndex = card.index;
+    }
+  }
+  return [{ id: (target || lane).id }];
+}
+
+function TaskCard({ card, column, index, busy, onOpen, dropId }) {
+  const titleId = useId();
+  const priority = priorityName(card.priority);
+  const data = { columnId: column.id, columnName: column.name, index, title: card.title };
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging, transform } = useDraggable({ id: card.id, data, disabled: busy });
+  const slotId = `slot:${card.id}`;
+  const drop = useDroppable({ id: slotId, data: { ...data, type: 'card', cardId: card.id } });
+  return <li className="task-list__item" ref={drop.setNodeRef} data-drop={dropId === slotId ? 'before' : undefined} data-dragging={isDragging || undefined}>
+    <article className="task-card" ref={setNodeRef} style={isDragging && transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined}>
+      <h3 className="task-card__title" aria-labelledby={titleId}>
+        <button type="button" className="task-card__edit" aria-label={`Edit card ${card.title}`} disabled={busy} onClick={() => onOpen()}>
+          <span id={titleId}>{card.title}</span>
+        </button>
+      </h3>
+      <button type="button" id={`move-card-${card.id}`} className="task-card__grip" ref={setActivatorNodeRef} {...listeners}
+        aria-label={`Move card ${card.title}`} aria-describedby={attributes['aria-describedby']} aria-haspopup="dialog"
+        title="Drag to move, or open move controls" disabled={busy} onClick={() => onOpen(true)}><GripIcon /></button>
+      {card.description && <p className="task-card__desc">{card.description}</p>}
+      <p className="task-card__meta">
+        <span className={`task-card__priority task-card__priority--${priority.toLowerCase()}`}>{PRIORITY_LABELS[priority]}</span>
+        {card.dueDate && <time dateTime={card.dueDate}>Due {dueDateLabel(card.dueDate)}</time>}
+      </p>
+    </article>
+  </li>;
+}
+
+function BoardColumn({ column, index, busy, onAdd, onEdit, dropId }) {
   const cards = Array.isArray(column.cards) ? column.cards : [];
   const headingId = `column-title-${column.id}`;
-  return <section className={`column board-column board-column--${statusTone(column.name, index)}`} aria-labelledby={headingId}>
+  const laneId = `lane:${column.id}`;
+  const drop = useDroppable({ id: laneId, data: { type: 'lane', columnId: column.id, columnName: column.name, index: cards.length } });
+  return <section ref={drop.setNodeRef} className={`board-column board-column--${statusTone(column.name, index)}`} aria-labelledby={headingId} data-drop={dropId === laneId ? 'end' : undefined}>
     <header className="board-column__head">
       <h2 id={headingId}>
         <span className="board-column__dot" aria-hidden="true" />
         <span className="board-column__name">{column.name}</span>
-        <span className="board-column__count" aria-label={`${cards.length} card${cards.length === 1 ? '' : 's'}`}>{cards.length}</span>
       </h2>
-      <button type="button" className="board-column__add" aria-label={`Add card to ${column.name}`} title={`Add card to ${column.name}`} disabled={busy} onClick={onAdd}>
-        <PlusIcon />
-      </button>
+      <span className="board-column__count" aria-label={`${cards.length} ${cards.length === 1 ? 'card' : 'cards'}`}>{cards.length}</span>
+      <button type="button" className="board-column__add" aria-label={`Add card to ${column.name}`} title={`Add card to ${column.name}`} disabled={busy} onClick={onAdd}><PlusIcon /></button>
     </header>
     {cards.length
-      ? <ol className="task-list" role="list">{cards.map((card, cardIndex) => <li key={card.id}>
-        <TaskCard card={card} busy={busy} onOpen={() => onEdit(card, cardIndex)} />
-      </li>)}</ol>
-      : <p className="board-column__empty">No cards yet</p>}
+      ? <ol className="task-list" role="list">{cards.map((card, cardIndex) => <TaskCard key={card.id} card={card} column={column} index={cardIndex} busy={busy}
+        dropId={dropId} onOpen={(moveFirst) => onEdit(card, cardIndex, moveFirst)} />)}</ol>
+      : <p className="board-column__empty">{dropId === laneId ? 'Drop card here' : 'No cards yet'}</p>}
   </section>;
 }
 
-function CardEditor({ card, column, columns, index, onSave, onCancel, onMove, onDelete, onBusy }) {
+const dragAccessibility = {
+  restoreFocus: false,
+  screenReaderInstructions: { draggable: 'Drag a card by its handle. To move without dragging, activate the handle to open the Move card controls.' },
+  announcements: {
+    onDragStart: ({ active }) => `Picked up ${active.data.current.title}.`,
+    onDragOver: ({ active, over }) => over ? `${over.data.current.columnName}, position ${dropPosition(active.data.current, over.data.current) + 1}.` : 'Not over a column.',
+    onDragEnd: () => '', // Only confirm a move after the server has saved it.
+    onDragCancel: () => 'Card move cancelled.',
+  },
+};
+
+function BoardColumns({ columns, busy, onAdd, onEdit, onDrop }) {
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+  const [drag, setDrag] = useState(null);
+  const [target, setTarget] = useState(null);
+
+  const dropId = drag && target && (drag.columnId !== target.columnId || drag.index !== dropPosition(drag, target)) ? target.id : null;
+
+  return <DndContext sensors={sensors} collisionDetection={boardCollision} accessibility={dragAccessibility}
+    onDragStart={({ active }) => setDrag({ id: active.id, ...active.data.current })}
+    onDragOver={({ over }) => setTarget(over && { id: over.id, ...over.data.current })}
+    onDragCancel={() => { setDrag(null); setTarget(null); }}
+    onDragEnd={({ active, over }) => {
+      setDrag(null);
+      setTarget(null);
+      if (!over || busy) return;
+      const source = active.data.current;
+      const target = over.data.current;
+      const position = dropPosition(source, target);
+      if (target.columnId !== source.columnId || position !== source.index) onDrop(active.id, source.title, target.columnId, target.columnName, position);
+    }}>
+    <div className="board-columns" data-drag-active={Boolean(drag)}>
+      {columns.map((column, index) => <BoardColumn key={column.id} column={column} index={index} busy={busy}
+        dropId={dropId}
+        onAdd={() => onAdd(column)} onEdit={(card, cardIndex, moveFirst) => onEdit(column, card, cardIndex, moveFirst)} />)}
+    </div>
+  </DndContext>;
+}
+
+function CardEditor({ card, column, columns, index, moveFirst, onSave, onCancel, onMove, onDelete, onBusy }) {
   const edit = useOperation();
   const move = useOperation();
   const remove = useOperation();
@@ -391,7 +488,7 @@ function CardEditor({ card, column, columns, index, onSave, onCancel, onMove, on
       <form className="card-move__form" aria-label={`Move ${card.title}`} onSubmit={submitMove}>
         <div className="field">
           <label htmlFor={moveId}>Move to column</label>
-          <select id={moveId} value={target} disabled={pending} onChange={(event) => setTarget(event.target.value)}>
+          <select id={moveId} data-autofocus={moveFirst || undefined} value={target} disabled={pending} onChange={(event) => setTarget(event.target.value)}>
             {moveColumns.map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.name}</option>)}
           </select>
         </div>
@@ -416,10 +513,38 @@ export function Board() {
   const [formBusy, setFormBusy] = useState(false);
   const [status, setStatus] = useState('');
   const boardDelete = useOperation();
+  const dragMove = useOperation();
+  const [movedHandle, setMovedHandle] = useState(null);
   const navigate = useNavigate();
   const board = resource.data?.board;
   const columns = Array.isArray(resource.data?.columns) ? resource.data.columns : [];
-  const busy = formBusy || boardDelete.pending || resource.loading;
+  const busy = formBusy || boardDelete.pending || dragMove.pending || resource.loading;
+
+  useEffect(() => {
+    if (!movedHandle || busy) return;
+    // A cross-column move remounts the handle. Respect focus if the user moved it while saving.
+    if (document.activeElement === document.body) document.getElementById(movedHandle)?.focus();
+    setMovedHandle(null);
+  }, [busy, movedHandle]);
+
+  function saveDrop(cardId, title, targetColumnId, columnName, newPosition) {
+    const handleId = `move-card-${cardId}`;
+    const restoreHandle = document.activeElement?.id === handleId;
+    void dragMove.run(async () => {
+      setStatus('Moving card…');
+      try {
+        // The move endpoint returns the canonical board, so don't optimistically
+        // reorder or issue another GET that can fail after a successful drop.
+        const detail = await resource.api(`/api/cards/${encodeURIComponent(cardId)}/move`, { method: 'POST', body: { targetColumnId, newPosition } });
+        resource.setData(detail);
+        if (restoreHandle) setMovedHandle(handleId);
+        setStatus(`Moved “${title}” to ${columnName}, position ${newPosition + 1}.`);
+      } catch (error) {
+        setStatus('');
+        throw new Error(`Couldn’t move the card. ${error.message}`);
+      }
+    });
+  }
 
   useEffect(() => {
     if (!status) return undefined;
@@ -443,19 +568,15 @@ export function Board() {
 
   return <Page title={board?.name || 'Board'} className="board-main" back={{ to: '/dashboard', label: 'All boards' }} actions={actions}>
     {board?.description && <p className="board-description preserve-text">{board.description}</p>}
+    <ErrorMessage error={dragMove.error} />
     <ResourceState resource={resource} loading={<BoardSkeleton />}>
       {board && (columns.length
-        ? <div className="board-columns">{columns.map((column, index) => <BoardColumn
-          column={column}
-          index={index}
-          busy={busy}
-          key={column.id}
-          onAdd={() => setCardEditing({ column })}
-          onEdit={(card, cardIndex) => setCardEditing({ column, card, index: cardIndex })}
-        />)}</div>
+        ? <BoardColumns columns={columns} busy={busy} onDrop={saveDrop}
+          onAdd={(column) => setCardEditing({ column })}
+          onEdit={(column, card, index, moveFirst) => setCardEditing({ column, card, index, moveFirst })} />
         : <p className="board-empty">This board has no columns.</p>)}
     </ResourceState>
-    <p className={`board-toast${status ? ' is-visible' : ''}`} role="status" aria-live="polite" aria-atomic="true">{status}</p>
+    <p className={`board-toast${status ? ' is-visible' : ''}`} role="status" aria-label="Board activity" aria-live="polite" aria-atomic="true">{status}</p>
     {editingBoard && board && <Modal labelledBy="board-edit-title" panelClassName="board-modal" onClose={() => { if (!formBusy) setEditingBoard(false); }}>
       <BoardForm headingId="board-edit-title" board={board} onBusy={setFormBusy} onCancel={() => setEditingBoard(false)} onSave={async (body) => {
         await resource.api(`/api/boards/${board.id}`, { method: 'PUT', body });
@@ -483,6 +604,7 @@ export function Board() {
         column={cardEditing.column}
         columns={columns}
         index={cardEditing.index}
+        moveFirst={cardEditing.moveFirst}
         onBusy={setFormBusy}
         onCancel={() => setCardEditing(null)}
         onSave={(body) => mutate(

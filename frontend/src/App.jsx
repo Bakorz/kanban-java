@@ -5,7 +5,7 @@ import { AuthProvider, useAuth } from './Auth.jsx';
 import { AuthPage } from './AuthPages.jsx';
 import { Board, Dashboard } from './Boards.jsx';
 import { Landing } from './Landing.jsx';
-import { ErrorMessage, Page, useOperation } from './ui.jsx';
+import { ErrorMessage, Page, WorkspaceLoading, useOperation } from './ui.jsx';
 
 export function HealthCheck() {
   const [state, setState] = useState('idle');
@@ -54,7 +54,7 @@ function BrandMark() {
 function Protected({ children }) {
   const auth = useAuth();
   const location = useLocation();
-  if (auth.loading) return <Page title="Loading your workspace"><progress aria-label="Loading authentication" /></Page>;
+  if (auth.loading) return <Page title="Loading your workspace" className="workspace-start"><WorkspaceLoading label="Checking your session…" /></Page>;
   if (!auth.session) return <Navigate to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`} replace />;
   if (auth.recovery) return <Navigate to="/reset-password" replace />;
   // User-scoped views unmount on account change / logout / auth failure.
@@ -70,7 +70,10 @@ function Shell() {
     <a className="skip-link" href="#content">Skip to main content</a>
     <header className={`app-header${onAuth ? ' app-header--auth' : ''}`}><Link className="brand" to="/"><BrandMark />Kanban</Link>
       <nav aria-label={onAuth ? 'Account' : 'Primary'}>{onAuth ? <Link className="app-header__back" to="/">Back to home</Link> : <><NavLink to="/" end>Home</NavLink><NavLink to="/dashboard">My boards</NavLink>
-        {auth.session ? <button type="button" disabled={op.pending} onClick={() => { void op.run(async () => { const { error } = await auth.client.auth.signOut(); if (error) throw error; }); }}>{op.pending ? 'Logging out…' : 'Log out'}</button> : <NavLink to="/login">Log in</NavLink>}</>}
+        {auth.session ? <button className="app-header__logout" type="button" disabled={op.pending} onClick={() => { void op.run(async () => { const { error } = await auth.client.auth.signOut(); if (error) throw error; }); }}>
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M9 16H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h4M8 10h8m-3-3 3 3-3 3" /></svg>
+          {op.pending ? 'Logging out…' : 'Log out'}
+        </button> : <NavLink to="/login">Log in</NavLink>}</>}
       </nav>
     </header>
     <ErrorMessage error={op.error} />
